@@ -169,6 +169,7 @@ def build_post_page(meta, body_html, toc_html, filename):
   <meta name="description" content="{e(description)}">
   <meta name="author" content="{e(author)}">
   <meta name="robots" content="index, follow">
+  <meta name="google-site-verification" content="42n3AA2IgDxO8o4pe3uUfhhTOVxKJhs4OsDTbEtJNqc">
   <link rel="canonical" href="{SITE_URL}/posts/{e(filename)}">
   <meta property="og:title" content="{e(title)}">
   <meta property="og:description" content="{e(description)}">
@@ -340,6 +341,7 @@ def build_index_page(posts_data):
   <meta name="description" content="{e(SITE_DESC)}">
   <meta name="author" content="0xma1ware">
   <meta name="robots" content="index, follow">
+  <meta name="google-site-verification" content="42n3AA2IgDxO8o4pe3uUfhhTOVxKJhs4OsDTbEtJNqc">
   <link rel="canonical" href="{SITE_URL}/">
   <meta property="og:title" content="{e(SITE_TITLE)}">
   <meta property="og:description" content="{e(SITE_DESC)}">
