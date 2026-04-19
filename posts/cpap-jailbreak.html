@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jailbreaking ResMed Airsense 10 Autoste CPAP machine to a BiPAP machine — 0xma1ware</title>
-  <meta name="description" content="So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator for COVID-19 patients. Naturally, I wanted to">
+  <meta name="description" content="So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator...">
   <meta name="author" content="ma1ware">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="42n3AA2IgDxO8o4pe3uUfhhTOVxKJhs4OsDTbEtJNqc">
   <link rel="canonical" href="https://0xma1ware.github.io/posts/cpap-jailbreak.html">
   <meta property="og:title" content="Jailbreaking ResMed Airsense 10 Autoste CPAP machine to a BiPAP machine">
-  <meta property="og:description" content="So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator for COVID-19 patients. Naturally, I wanted to">
+  <meta property="og:description" content="So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator...">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://0xma1ware.github.io/posts/cpap-jailbreak.html">
-  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="og:image" content="https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcSgDNtsyXxOxDZkY7WYHFX2xulqKzHqW1wJB3QRweXWXGwczwi-vBN7bbda9fKr2TRibIV-XeZ3ooEKeeqEE5GjpCUx60dBHDgu2SUo7MgXHOjtsBrXcTtrdw">
   <meta property="article:published_time" content="2025-02-24">
   <meta property="article:author" content="ma1ware">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@0xma1ware">
   <meta name="twitter:title" content="Jailbreaking ResMed Airsense 10 Autoste CPAP machine to a BiPAP machine">
-  <meta name="twitter:description" content="So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator for COVID-19 patients. Naturally, I wanted to">
+  <meta name="twitter:description" content="So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator...">
+  <meta name="twitter:image" content="https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcSgDNtsyXxOxDZkY7WYHFX2xulqKzHqW1wJB3QRweXWXGwczwi-vBN7bbda9fKr2TRibIV-XeZ3ooEKeeqEE5GjpCUx60dBHDgu2SUo7MgXHOjtsBrXcTtrdw">
   <link rel="icon" href="../favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +29,7 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org", "@type": "BlogPosting",
-    "headline": "Jailbreaking ResMed Airsense 10 Autoste CPAP machine to a BiPAP machine", "description": "So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator for COVID-19 patients. Naturally, I wanted to",
+    "headline": "Jailbreaking ResMed Airsense 10 Autoste CPAP machine to a BiPAP machine", "description": "So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator...",
     "datePublished": "2025-02-24",
     "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
     "publisher": { "@type": "Person", "name": "ma1ware" },
@@ -38,7 +39,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo" width="32" height="32"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
     <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
       <span></span><span></span><span></span>
     </button>
@@ -66,7 +67,7 @@
     <h2 id="background">Background</h2>
 <p>So around 4 years ago, I stumbled across a video from Hak5 that mentioned that someone had jailbroken a cpap machine in order to turn it into a ventilator for COVID-19 patients. Naturally, I wanted to try out this attack for myself since I knew someone that also used this specific machine. </p>
 <p>The target machine looks like this:</p>
-<p><img alt="&quot;CPAP machine&quot;" src="https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcSgDNtsyXxOxDZkY7WYHFX2xulqKzHqW1wJB3QRweXWXGwczwi-vBN7bbda9fKr2TRibIV-XeZ3ooEKeeqEE5GjpCUx60dBHDgu2SUo7MgXHOjtsBrXcTtrdw" /></p>
+<p><img alt="CPAP machine" src="https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcSgDNtsyXxOxDZkY7WYHFX2xulqKzHqW1wJB3QRweXWXGwczwi-vBN7bbda9fKr2TRibIV-XeZ3ooEKeeqEE5GjpCUx60dBHDgu2SUo7MgXHOjtsBrXcTtrdw"  loading="lazy"/></p>
 <p>3.8ish years later, I finally stopped procastinating and did the hack. The hack itself is pretty easy thanks to the researcher that published their research for everyone to see. <strong>I did not find this vulnerability, all credits go to this researcher</strong>.</p>
 <p>Here is the website that explains how do the hack: https://airbreak.dev/<br />
 And the GitHub repo that contains the software you will need for the hack: https://github.com/osresearch/airbreak</p>
