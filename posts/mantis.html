@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTB - Mantis — 0xma1ware</title>
-  <meta name="description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia">
+  <meta name="description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a...">
   <meta name="author" content="ma1ware">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="42n3AA2IgDxO8o4pe3uUfhhTOVxKJhs4OsDTbEtJNqc">
   <link rel="canonical" href="https://0xma1ware.github.io/posts/mantis.html">
   <meta property="og:title" content="HTB - Mantis">
-  <meta property="og:description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia">
+  <meta property="og:description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a...">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://0xma1ware.github.io/posts/mantis.html">
-  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="og:image" content="https://0xma1ware.github.io/imgs/assets-mantis/port8080.png">
   <meta property="article:published_time" content="2023-07-29">
   <meta property="article:author" content="ma1ware">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@0xma1ware">
   <meta name="twitter:title" content="HTB - Mantis">
-  <meta name="twitter:description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia">
+  <meta name="twitter:description" content="Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a...">
+  <meta name="twitter:image" content="https://0xma1ware.github.io/imgs/assets-mantis/port8080.png">
   <link rel="icon" href="../favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +29,7 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org", "@type": "BlogPosting",
-    "headline": "HTB - Mantis", "description": "Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a secret directory which contained some credentia",
+    "headline": "HTB - Mantis", "description": "Mantis was an interesting box with a somewhat realistic chain of attack, it started off with two webservers both IIS one had Orchard CMS the other had a...",
     "datePublished": "2023-07-29",
     "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
     "publisher": { "@type": "Person", "name": "ma1ware" },
@@ -38,7 +39,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo" width="32" height="32"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
     <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
       <span></span><span></span><span></span>
     </button>
@@ -209,7 +210,7 @@ Service<span style="color: #F8F8F2"> </span>detection<span style="color: #F8F8F2
 <hr />
 <h1 id="enumeration">Enumeration</h1>
 <h2 id="port-8080-http-iis">Port 8080 - HTTP (IIS)</h2>
-<p><img alt="&quot;Port 8080&quot;" src="../imgs/assets-mantis/port8080.png" /></p>
+<p><img alt="Port 8080" src="../imgs/assets-mantis/port8080.png"  loading="lazy"/></p>
 <p>Website is being runned by Orchard CMS</p>
 <p>Directory searching with gobuster returns:</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>/archive<span style="color: #F8F8F2">              </span><span style="color: #FF4689">(</span>Status:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #FF4689">)</span><span style="color: #F8F8F2"> </span><span style="color: #FF4689">[</span>Size:<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2866</span><span style="color: #FF4689">]</span>
@@ -237,7 +238,7 @@ Service<span style="color: #F8F8F2"> </span>detection<span style="color: #F8F8F2
 <p>We can easily deduce that archive can have any prefix, also directories are case-insensitive because of IIS.</p>
 <hr />
 <h2 id="port-389-ldap">Port 389 - LDAP</h2>
-<p><img alt="&quot;LDAP anon bind&quot;" src="../imgs/assets-mantis/ldap1.png" /></p>
+<p><img alt="LDAP anon bind" src="../imgs/assets-mantis/ldap1.png"  loading="lazy"/></p>
 <hr />
 <h2 id="port-88-kerberos">Port 88 - Kerberos</h2>
 <p>I fire off a kerbrute in the background and it finds some users:</p>
@@ -264,7 +265,7 @@ Version:<span style="color: #F8F8F2"> </span>v1.0.3<span style="color: #F8F8F2">
 /orchard
 </code></pre></div>
 
-<p><img alt="&quot;Secret Directory&quot;" src="../imgs/assets-mantis/secure_notes.png" /></p>
+<p><img alt="Secret Directory" src="../imgs/assets-mantis/secure_notes.png"  loading="lazy"/></p>
 <p>The <code>web.config</code> 404s</p>
 <p><code>/secure_notes</code> contains</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>dev_notes_NmQyNDI0NzE2YzVmNTM0MDVmNTA0MDczNzM1NzMwNzI2NDIx.txt.txt:
@@ -285,13 +286,13 @@ SQL<span style="color: #F8F8F2"> </span>Server<span style="color: #F8F8F2"> </sp
 <hr />
 <h2 id="port-1433-mssql">Port 1433 - MSSQL</h2>
 <p>We can access the mssql server using impacket<br />
-<img alt="&quot;Impacket-mssqlclient&quot;" src="../imgs/assets-mantis/impacket-mssql.png" /><br />
+<img alt="Impacket-mssqlclient" src="../imgs/assets-mantis/impacket-mssql.png"  loading="lazy"/><br />
 I was encountering some stability issues with the box and had to restart it.</p>
 <p>I prefer to use a GUI to interact with MSSQL so I'll fire up DBeaver</p>
 <p>If you get an SSL error that mentions TLS 1.0 and TLS 1.1, you can fix it using: https://github.com/dbeaver/dbeaver/issues/12668#issuecomment-909301270 on Kali(may vary, if this doesn't work one of the others in the repo issue will)</p>
 <p>Anyway, this link told me where the credentials are stored: https://weblogs.asp.net/bleroy/recovering-the-admin-password-in-orchard</p>
 <p>So I took a look in <code>blog_Orchard_Users_UserPartRecord</code>, and found some creds:</p>
-<p><img alt="&quot;Credentials&quot;" src="../imgs/assets-mantis/db_creds.png" /></p>
+<p><img alt="Credentials" src="../imgs/assets-mantis/db_creds.png"  loading="lazy"/></p>
 <p>One is a salted hash the other is plaintext:</p>
 <ul>
 <li>james:J@m3s_P@ssW0rd!</li>
@@ -301,9 +302,9 @@ I was encountering some stability issues with the box and had to restart it.</p>
 <hr />
 <h1 id="bloodhound">Bloodhound?</h1>
 <p>Running bloodhound-python(ingestor) to gather information:<br />
-<img alt="&quot;Bloodhound ingestor&quot;" src="../imgs/assets-mantis/bloodhound-python.png" /></p>
+<img alt="Bloodhound ingestor" src="../imgs/assets-mantis/bloodhound-python.png"  loading="lazy"/></p>
 <p>Analysing the information we find that the user james can RDP into the box:<br />
-<img alt="&quot;RDP Graph&quot;" src="../imgs/assets-mantis/rdp-privs.png" /></p>
+<img alt="RDP Graph" src="../imgs/assets-mantis/rdp-privs.png"  loading="lazy"/></p>
 <p>I don't see how that's helpful since there's no RDP service available on the box by the looks of it? Nothing else sticks out.</p>
 <hr />
 <h2 id="the-breakthrough">The Breakthrough</h2>
@@ -371,7 +372,7 @@ ma1ware@shadow:~/pentest/htb/boxes/Mantis$
 </code></pre></div>
 
 <p>Setting up metasploit and running we succeed!</p>
-<p><img alt="&quot;Metasploit&quot;" src="../imgs/assets-mantis/msf.png" /></p>
+<p><img alt="Metasploit" src="../imgs/assets-mantis/msf.png"  loading="lazy"/></p>
 <p>Yeah, no it didn't work </p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>ma1ware@shadow:~/pentest/htb/boxes/Mantis$<span style="color: #F8F8F2"> KRB5CCNAME</span><span style="color: #FF4689">=</span>20230726183221_default_10.129.165.179_mit.kerberos.cca_175363.bin<span style="color: #F8F8F2"> </span>impacket-psexec<span style="color: #F8F8F2"> </span>-k<span style="color: #F8F8F2"> </span>-no-pass<span style="color: #F8F8F2"> </span>james@htb.local
 Impacket<span style="color: #F8F8F2"> </span>v0.10.0<span style="color: #F8F8F2"> </span>-<span style="color: #F8F8F2"> </span>Copyright<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2022</span><span style="color: #F8F8F2"> </span>SecureAuth<span style="color: #F8F8F2"> </span>Corporation
@@ -385,10 +386,10 @@ Impacket<span style="color: #F8F8F2"> </span>v0.10.0<span style="color: #F8F8F2"
 </code></pre></div>
 
 <p>Re-generating the exploit, and boom we get a shell</p>
-<p><img alt="&quot;Shell using msf generated ticket&quot;" src="../imgs/assets-mantis/msf-ticket.png" /></p>
+<p><img alt="Shell using msf generated ticket" src="../imgs/assets-mantis/msf-ticket.png"  loading="lazy"/></p>
 <h2 id="non-metasploit-method">Non-metasploit method</h2>
 <p>Another way to exploit this would be to use the <code>impacket-goldenPac</code> script.</p>
-<p><img alt="&quot;Alternative method&quot;" src="../imgs/assets-mantis/alternative-root.png" /></p>
+<p><img alt="Alternative method" src="../imgs/assets-mantis/alternative-root.png"  loading="lazy"/></p>
 <p>If you really felt like it you can also use the exploit on SecWiki since that isn't as automated as much.</p>
 <p>Anyway that's the box!</p>
   </article>

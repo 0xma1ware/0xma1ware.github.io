@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTB - Escape — 0xma1ware</title>
-  <meta name="description" content="This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of default credentials for MSSQL. Using those to">
+  <meta name="description" content="This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of...">
   <meta name="author" content="ma1ware">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="42n3AA2IgDxO8o4pe3uUfhhTOVxKJhs4OsDTbEtJNqc">
   <link rel="canonical" href="https://0xma1ware.github.io/posts/escape.html">
   <meta property="og:title" content="HTB - Escape">
-  <meta property="og:description" content="This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of default credentials for MSSQL. Using those to">
+  <meta property="og:description" content="This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of...">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://0xma1ware.github.io/posts/escape.html">
-  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="og:image" content="https://0xma1ware.github.io/imgs/assets-escape/smb1.png">
   <meta property="article:published_time" content="2023-07-31">
   <meta property="article:author" content="ma1ware">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@0xma1ware">
   <meta name="twitter:title" content="HTB - Escape">
-  <meta name="twitter:description" content="This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of default credentials for MSSQL. Using those to">
+  <meta name="twitter:description" content="This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of...">
+  <meta name="twitter:image" content="https://0xma1ware.github.io/imgs/assets-escape/smb1.png">
   <link rel="icon" href="../favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +29,7 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org", "@type": "BlogPosting",
-    "headline": "HTB - Escape", "description": "This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of default credentials for MSSQL. Using those to",
+    "headline": "HTB - Escape", "description": "This was a very fun box that showcased some realistic Active Directory attacks. The box starts off with me finding a public share in which I find a set of...",
     "datePublished": "2023-07-31",
     "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
     "publisher": { "@type": "Person", "name": "ma1ware" },
@@ -38,7 +39,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo" width="32" height="32"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
     <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
       <span></span><span></span><span></span>
     </button>
@@ -201,24 +202,24 @@ Please<span style="color: #F8F8F2"> </span>enter<span style="color: #F8F8F2"> </
 <hr />
 <h2 id="port-445-smb">Port 445 - SMB</h2>
 <p>Running CrackMapExec we get a share back with guest user:</p>
-<p><img alt="&quot;SMB listing&quot;" src="../imgs/assets-escape/smb1.png" /></p>
+<p><img alt="SMB listing" src="../imgs/assets-escape/smb1.png"  loading="lazy"/></p>
 <p>Logging in to the share and checking if there are files we find a .pdf so I transfer it over to my system.</p>
-<p><img alt="&quot;Downloading the pdf&quot;" src="../imgs/assets-escape/smb2.png" /></p>
+<p><img alt="Downloading the pdf" src="../imgs/assets-escape/smb2.png"  loading="lazy"/></p>
 <p>Looking at the PDF we find:<br />
-<img alt="&quot;PDF&quot;" src="../imgs/assets-escape/pdf.png" /></p>
+<img alt="PDF" src="../imgs/assets-escape/pdf.png"  loading="lazy"/></p>
 <p>We find some credentials along with an email address: <code>brandon.brown@sequel.htb</code></p>
 <p>So if I encounter any other full names at least I know the pattern is <code>fname.lname@sequel.htb</code></p>
 <p>Also running exiftool returned this: <code>Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/0.15.6 Chrome/100.0.4896.160 Electron/18.3.5 Safari/537.36</code> but I don't think it's important</p>
 <hr />
 <h2 id="port-1433-mssql">Port 1433 - MSSQL</h2>
 <p>Logging in with the provided credentials my first thought was to enable xp_cmdshell but that didn't work so I proceeded to run xp_dirtree to get the hash using responder</p>
-<p><img alt="&quot;XP_DIRTREE&quot;" src="../imgs/assets-escape/mssql1.png" /></p>
-<p><img alt="&quot;Users hash&quot;" src="../imgs/assets-escape/mssql2.png" /></p>
+<p><img alt="XP_DIRTREE" src="../imgs/assets-escape/mssql1.png"  loading="lazy"/></p>
+<p><img alt="Users hash" src="../imgs/assets-escape/mssql2.png"  loading="lazy"/></p>
 <p>The hash cracked to <code>REGGIE1234ronnie</code></p>
 <p>So now we have new creds: <code>sql_svc:REGGIE1234ronnie</code></p>
 <h2 id="logging-in-with-winrm">Logging in with WinRM</h2>
 <p>We can use evil-winrm to login to the box<br />
-<img alt="&quot;Logging in as the user&quot;" src="../imgs/assets-escape/evil-winrm.png" /></p>
+<img alt="Logging in as the user" src="../imgs/assets-escape/evil-winrm.png"  loading="lazy"/></p>
 <p>In the C drive there is a folder SQLServer in which a log file is present which leaks credentials</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>2022-11-18 13:43:07.44 Logon       Logon failed for user &#39;sequel.htb\Ryan.Cooper&#39;. Reason: Password did not match that for the login provided. [CLIENT: 127.0.0.1]
 2022-11-18 13:43:07.48 Logon       Error: 18456, Severity: 14, State: 8.
@@ -230,7 +231,7 @@ Please<span style="color: #F8F8F2"> </span>enter<span style="color: #F8F8F2"> </
 </code></pre></div>
 
 <p>Running a bloodhound ingestor<br />
-<img alt="&quot;Running remote bloddhound ingestor&quot;" src="../imgs/assets-escape/bh-ingestor.png" /></p>
+<img alt="Running remote bloddhound ingestor" src="../imgs/assets-escape/bh-ingestor.png"  loading="lazy"/></p>
 <p>Opening it in bloodhound we find that Ryan.Cooper is an unrolled member of CERTIFICATE SERVICE DCOM ACCESS</p>
 <p>I'll upload Certify.exe to the target machine and see if it finds anything!</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #FF4689">[</span>!<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Vulnerable<span style="color: #F8F8F2"> </span>Certificates<span style="color: #F8F8F2"> </span>Templates<span style="color: #F8F8F2"> </span>:
@@ -294,7 +295,7 @@ Certipy<span style="color: #F8F8F2"> </span>v4.7.0<span style="color: #F8F8F2"> 
 </code></pre></div>
 
 <p>And now we can login as Administrator on the box</p>
-<p><img alt="&quot;PSExec&quot;" src="../imgs/assets-escape/admin-shell.png" /></p>
+<p><img alt="PSExec" src="../imgs/assets-escape/admin-shell.png"  loading="lazy"/></p>
 <p>And that's the box!</p>
 <p>Tip: You can also use evil-winrm with -H to login in as Administrator.</p>
   </article>

@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTB - Monteverde — 0xma1ware</title>
-  <meta name="description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra">
+  <meta name="description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part...">
   <meta name="author" content="ma1ware">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="42n3AA2IgDxO8o4pe3uUfhhTOVxKJhs4OsDTbEtJNqc">
   <link rel="canonical" href="https://0xma1ware.github.io/posts/monteverde.html">
   <meta property="og:title" content="HTB - Monteverde">
-  <meta property="og:description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra">
+  <meta property="og:description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part...">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://0xma1ware.github.io/posts/monteverde.html">
-  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="og:image" content="https://0xma1ware.github.io/imgs/assets-monteverde/MONTEVERDE_USERS_ENUM.png">
   <meta property="article:published_time" content="2025-03-22">
   <meta property="article:author" content="ma1ware">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@0xma1ware">
   <meta name="twitter:title" content="HTB - Monteverde">
-  <meta name="twitter:description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra">
+  <meta name="twitter:description" content="Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part...">
+  <meta name="twitter:image" content="https://0xma1ware.github.io/imgs/assets-monteverde/MONTEVERDE_USERS_ENUM.png">
   <link rel="icon" href="../favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +29,7 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org", "@type": "BlogPosting",
-    "headline": "HTB - Monteverde", "description": "Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part of Azure Admins group and dump the Administra",
+    "headline": "HTB - Monteverde", "description": "Monteverde is a medium ranked machine that starts off with enumerating users, then finding password to another user on an SMB share. This new user is part...",
     "datePublished": "2025-03-22",
     "author": { "@type": "Person", "name": "ma1ware", "url": "https://github.com/0xma1ware" },
     "publisher": { "@type": "Person", "name": "ma1ware" },
@@ -38,7 +39,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo" width="32" height="32"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
     <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
       <span></span><span></span><span></span>
     </button>
@@ -145,7 +146,7 @@ SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10<
 SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>*<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>Enumerated<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2"> local </span>users:<span style="color: #F8F8F2"> </span>MEGABANK
 </code></pre></div>
 
-<p><img alt="List of users I got from nxc" src="../imgs/assets-monteverde/MONTEVERDE_USERS_ENUM.png" title="List of users I got from nxc" /></p>
+<p><img alt="List of users I got from nxc" src="../imgs/assets-monteverde/MONTEVERDE_USERS_ENUM.png" title="List of users I got from nxc"  loading="lazy"/></p>
 <h5 id="hint">Hint</h5>
 <p>Rather than using cut or awk to extract the output from nxc, you can use the built in flag <code>--users-export FILENAME</code> to export all of the users nxc finds to a filename. So the command would be something like this <code>nxc smb 10.129.228.111 -u '' -p ''  --users --users-export users</code></p>
 <p>Running enum4linux we find a few addidtional things like the following:</p>
@@ -172,7 +173,7 @@ SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10<
 SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span><span style="color: #FF4689">[</span>-<span style="color: #FF4689">]</span><span style="color: #F8F8F2"> </span>MEGABANK.LOCAL<span style="color: #AE81FF">\s</span>morgan:smorgan<span style="color: #F8F8F2"> </span>STATUS_LOGON_FAILURE<span style="color: #F8F8F2"> </span>
 </code></pre></div>
 
-<p><img alt="Checking for weak creds" src="../imgs/assets-monteverde/MONTEVERDE_DEFAULT.png" title="Checking for weak creds" /></p>
+<p><img alt="Checking for weak creds" src="../imgs/assets-monteverde/MONTEVERDE_DEFAULT.png" title="Checking for weak creds"  loading="lazy"/></p>
 <p>Success! The SABatchJobs user has their password set to their username. </p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>SABatchJobs<span style="color: #F8F8F2"> </span>/<span style="color: #F8F8F2"> </span>SABatchJobs
 </code></pre></div>
@@ -196,7 +197,7 @@ SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10<
 SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10</span>.129.228.111<span style="color: #F8F8F2">  </span><span style="color: #AE81FF">445</span><span style="color: #F8F8F2">    </span>MONTEVERDE<span style="color: #F8F8F2">       </span>users$<span style="color: #F8F8F2">          </span>READ<span style="color: #F8F8F2">            </span>
 </code></pre></div>
 
-<p><img alt="Listing the shares" src="../imgs/assets-monteverde/MONTEVERDE_SMB_1.png" title="Listing the shares" /></p>
+<p><img alt="Listing the shares" src="../imgs/assets-monteverde/MONTEVERDE_SMB_1.png" title="Listing the shares"  loading="lazy"/></p>
 <p>The <code>azure_uploads</code> and <code>users$</code> stick out to me. </p>
 <p>Now, there are two ways we could go about enumerating those shares.</p>
 <ol>
@@ -223,10 +224,10 @@ SMB<span style="color: #F8F8F2">         </span><span style="color: #AE81FF">10<
 <span style="color: #F8F8F2">  </span><span style="color: #FF4689">}</span>
 </code></pre></div>
 
-<p><img alt="Finding the file" src="../imgs/assets-monteverde/MONTEVERDE_SPIDER_PLUS.png" title="Finding the file" /></p>
+<p><img alt="Finding the file" src="../imgs/assets-monteverde/MONTEVERDE_SPIDER_PLUS.png" title="Finding the file"  loading="lazy"/></p>
 <p>The <code>azure_uploads</code> is empty, we also don't have any write permissions for it at the current time. There is a file in <code>users$</code> named azure.xml in mhope's folder! </p>
 <p>Downloading the file</p>
-<p><img alt="Getting the file" src="../imgs/assets-monteverde/MONTEVERDE_AZURE.png" title="Getting the file" /></p>
+<p><img alt="Getting the file" src="../imgs/assets-monteverde/MONTEVERDE_AZURE.png" title="Getting the file"  loading="lazy"/></p>
 <p>The file contains the following:</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #FF4689">&lt;Objs</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Version=</span><span style="color: #E6DB74">&quot;1.1.0.1&quot;</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">xmlns=</span><span style="color: #E6DB74">&quot;http://schemas.microsoft.com/powershell/2004/04&quot;</span><span style="color: #FF4689">&gt;</span>
 <span style="color: #F8F8F2">  </span><span style="color: #FF4689">&lt;Obj</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">RefId=</span><span style="color: #E6DB74">&quot;0&quot;</span><span style="color: #FF4689">&gt;</span>

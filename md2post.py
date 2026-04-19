@@ -40,7 +40,7 @@ POSTS_OUT_DIR  = "posts"
 POSTS_PER_PAGE = 6
 
 # ── Logo HTML (shared between index and post pages) ─────────────────────────
-LOGO_HTML = '<img src="{favicon}" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span>'
+LOGO_HTML = '<img src="{favicon}" alt="logo" width="32" height="32"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span>'
 
 # ── Utilities ───────────────────────────────────────────────────────────────
 
@@ -104,8 +104,23 @@ def extract_excerpt(meta, body_html):
     fp = re.search(r'<p>(.*?)</p>', body_html, re.DOTALL)
     if fp:
         t = re.sub(r'<[^>]+>', '', fp.group(1)).strip()
-        return t[:217].rsplit(' ',1)[0]+'...' if len(t)>220 else t
+        return t[:157].rsplit(' ',1)[0]+'...' if len(t)>160 else t
     return ''
+
+def extract_first_image(body_html):
+    img = re.search(r'<img[^>]+src="([^"]+)"', body_html)
+    if img:
+        src = img.group(1)
+        if src.startswith('../'):
+            return f"{SITE_URL}/{src[3:]}"
+        elif src.startswith('./'):
+            return f"{SITE_URL}/{src[2:]}"
+        elif src.startswith('/'):
+            return f"{SITE_URL}{src}"
+        elif not src.startswith('http'):
+            return f"{SITE_URL}/{src}"
+        return src
+    return f"{SITE_URL}/favicon.ico"
 
 def get_category(meta):
     cats = meta.get('categories', [])
@@ -152,7 +167,13 @@ def build_post_page(meta, body_html, toc_html, filename):
     category = get_category(meta)
     tags = get_tags(meta)
     difficulty = meta.get('difficulty', '')
-    description = (meta.get('description','') or extract_excerpt(meta, body_html))[:200]
+    description = (meta.get('description','') or extract_excerpt(meta, body_html))[:160]
+    og_image = extract_first_image(body_html)
+
+    # Lazy load images
+    body_html = re.sub(r'<img(.*?)(/?)>', r'<img\1 loading="lazy"\2>', body_html)
+    # Deduplicate loading="lazy" in case any markdown already had it
+    body_html = body_html.replace('loading="lazy" loading="lazy"', 'loading="lazy"')
 
     e = html_module.escape
     cat_cls = 'hardware' if category.lower()=='hardware' else ''
@@ -175,13 +196,14 @@ def build_post_page(meta, body_html, toc_html, filename):
   <meta property="og:description" content="{e(description)}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="{SITE_URL}/posts/{e(filename)}">
-  <meta property="og:image" content="{SITE_URL}/favicon.ico">
+  <meta property="og:image" content="{e(og_image)}">
   <meta property="article:published_time" content="{e(date)}">
   <meta property="article:author" content="{e(author)}">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="{TWITTER_HANDLE}">
   <meta name="twitter:title" content="{e(title)}">
   <meta name="twitter:description" content="{e(description)}">
+  <meta name="twitter:image" content="{e(og_image)}">
   <link rel="icon" href="../favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -348,10 +370,11 @@ def build_index_page(posts_data):
   <meta property="og:type" content="website">
   <meta property="og:url" content="{SITE_URL}/">
   <meta property="og:image" content="{SITE_URL}/favicon.ico">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="{TWITTER_HANDLE}">
   <meta name="twitter:title" content="{e(SITE_TITLE)}">
   <meta name="twitter:description" content="{e(SITE_DESC)}">
+  <meta name="twitter:image" content="{SITE_URL}/favicon.ico">
   <link rel="icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

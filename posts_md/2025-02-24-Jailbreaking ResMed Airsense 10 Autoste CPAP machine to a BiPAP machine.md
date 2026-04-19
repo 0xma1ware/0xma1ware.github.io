@@ -15,7 +15,7 @@ So around 4 years ago, I stumbled across a video from Hak5 that mentioned that s
 
 The target machine looks like this:
 
-!["CPAP machine"](https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcSgDNtsyXxOxDZkY7WYHFX2xulqKzHqW1wJB3QRweXWXGwczwi-vBN7bbda9fKr2TRibIV-XeZ3ooEKeeqEE5GjpCUx60dBHDgu2SUo7MgXHOjtsBrXcTtrdw)
+![CPAP machine](https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcSgDNtsyXxOxDZkY7WYHFX2xulqKzHqW1wJB3QRweXWXGwczwi-vBN7bbda9fKr2TRibIV-XeZ3ooEKeeqEE5GjpCUx60dBHDgu2SUo7MgXHOjtsBrXcTtrdw)
 
 3.8ish years later, I finally stopped procastinating and did the hack. The hack itself is pretty easy thanks to the researcher that published their research for everyone to see. **I did not find this vulnerability, all credits go to this researcher**.
 

